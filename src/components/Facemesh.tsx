@@ -2,6 +2,7 @@
 import * as React from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
+import { Line } from "@react-three/drei";
 
 export type MediaPipeFaceMesh = typeof FacemeshDatas.SAMPLE_FACE;
 
@@ -25,6 +26,9 @@ export type FacemeshApi = {
   outerRef: React.RefObject<THREE.Group>;
 };
 
+const defaultLookAt = new THREE.Vector3(0, 0, -1);
+const origin = new THREE.Vector3(0, 0, 0);
+
 export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
   (
     {
@@ -41,21 +45,15 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
   ) => {
     const outerRef = React.useRef<THREE.Group>(null);
     const meshRef = React.useRef<THREE.Mesh>(null);
-    const [geometry] = React.useState(() =>
-      new THREE.BufferGeometry().setIndex(FacemeshDatas.TRIANGULATION)
-    );
 
     const [sightDir] = React.useState(new THREE.Vector3());
     const [sightDirQuaternion] = React.useState(new THREE.Quaternion());
 
     const { invalidate } = useThree();
 
-    const [defaultLookAt] = React.useState(new THREE.Vector3(0, 0, -1));
-    const [origin] = React.useState(new THREE.Vector3(0, 0, 0));
-
-    const [lineGeometry] = React.useState(() =>
-      new THREE.BufferGeometry().setFromPoints([origin, defaultLookAt])
-    );
+    React.useEffect(() => {
+      meshRef.current?.geometry.setIndex(FacemeshDatas.TRIANGULATION);
+    }, []);
 
     const [a] = React.useState(new THREE.Vector3());
     const [b] = React.useState(new THREE.Vector3());
@@ -64,7 +62,10 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     const [ac] = React.useState(new THREE.Vector3());
     const [bboxSize] = React.useState(new THREE.Vector3());
     React.useEffect(() => {
-      geometry.setFromPoints(face.keypoints as THREE.Vector3[]);
+      const mesh = meshRef.current;
+      if (!mesh) return;
+
+      mesh.geometry.setFromPoints(face.keypoints as THREE.Vector3[]);
 
       //
       // A. compute sightDir vector (normal to verticalTri)
@@ -87,33 +88,31 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       //
 
       // center (before rotate back)
-      geometry.computeBoundingBox();
+      mesh.geometry.computeBoundingBox();
       if (debug) invalidate(); // invalidate to force re-render for box3Helper (after .computeBoundingBox())
-      geometry.center();
+      mesh.geometry.center();
 
       // rotate back + rotate outerRef
-      geometry.applyQuaternion(sightDirQuaternionInverse);
+      mesh.geometry.applyQuaternion(sightDirQuaternionInverse);
       outerRef.current?.setRotationFromQuaternion(sightDirQuaternion);
 
       // re-scale
-      geometry.boundingBox?.getSize(bboxSize);
+      mesh.geometry.boundingBox?.getSize(bboxSize);
       let scale = 1;
       if (width) scale = (width * 1) / bboxSize.x; // fit in width
       if (height) scale = (height * 1) / bboxSize.y; // fit in height
       if (depth) scale = (depth * 1) / bboxSize.z; // fit in depth
-      if (scale !== 1) geometry.scale(scale, scale, scale);
+      if (scale !== 1) mesh.geometry.scale(scale, scale, scale);
 
-      geometry.computeVertexNormals();
-      geometry.attributes.position.needsUpdate = true;
+      mesh.geometry.computeVertexNormals();
+      mesh.geometry.attributes.position.needsUpdate = true;
     }, [
       face,
       width,
       height,
       depth,
       verticalTri,
-      geometry,
       debug,
-      lineGeometry,
       invalidate,
       sightDir,
       sightDirQuaternion,
@@ -122,8 +121,6 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       c,
       ab,
       ac,
-      origin,
-      defaultLookAt,
       bboxSize,
     ]);
 
@@ -144,18 +141,14 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       <group {...props}>
         <group ref={outerRef}>
           <mesh ref={meshRef}>
-            <primitive object={geometry} attach="geometry" />
             {children}
 
             {debug ? (
               <>
-                {geometry?.boundingBox && (
-                  <box3Helper args={[geometry.boundingBox]} />
+                {meshRef.current?.geometry?.boundingBox && (
+                  <box3Helper args={[meshRef.current?.geometry.boundingBox]} />
                 )}
-                <line>
-                  <primitive object={lineGeometry} attach="geometry" />
-                  <lineBasicMaterial color={0x00ffff} />
-                </line>
+                <Line points={[origin, defaultLookAt]} color={0x00ffff} />
               </>
             ) : null}
           </mesh>
