@@ -7,17 +7,19 @@ import { Line } from "@react-three/drei";
 export type MediaPipeFaceMesh = typeof FacemeshDatas.SAMPLE_FACE;
 
 export type FacemeshProps = {
-  /** a MediaPipeFaceMesh object */
+  /** a MediaPipeFaceMesh object, default: a lambda face */
   face?: MediaPipeFaceMesh;
-  /** width of the mesh */
+  /** width of the mesh, default: undefined */
   width?: number;
-  /** or height of the mesh */
+  /** or height of the mesh, default: undefined */
   height?: number;
-  /** or depth of the mesh */
+  /** or depth of the mesh, default: 1 */
   depth?: number;
-  /** a landmarks tri supposed to be vertical */
+  /** a landmarks tri supposed to be vertical, default: [159, 386, 200] (see: https://github.com/tensorflow/tfjs-models/tree/master/face-landmarks-detection#mediapipe-facemesh-keypoints) */
   verticalTri?: [number, number, number];
-  /** */
+  /** a landmark index to be the origin of the mesh. default: undefined (ie. the bbox center) */
+  origin?: number;
+  /** debug mode, default: false */
   debug?: boolean;
 } & JSX.IntrinsicElements["group"];
 
@@ -27,7 +29,6 @@ export type FacemeshApi = {
 };
 
 const defaultLookAt = new THREE.Vector3(0, 0, -1);
-const origin = new THREE.Vector3(0, 0, 0);
 
 export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
   (
@@ -37,6 +38,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       height,
       depth,
       verticalTri = [159, 386, 200],
+      origin,
       debug = false,
       children,
       ...props
@@ -62,10 +64,10 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     const [ac] = React.useState(new THREE.Vector3());
     const [bboxSize] = React.useState(new THREE.Vector3());
     React.useEffect(() => {
-      const mesh = meshRef.current;
-      if (!mesh) return;
+      const geometry = meshRef.current?.geometry;
+      if (!geometry) return;
 
-      mesh.geometry.setFromPoints(face.keypoints as THREE.Vector3[]);
+      geometry.setFromPoints(face.keypoints as THREE.Vector3[]);
 
       //
       // A. compute sightDir vector (normal to verticalTri)
@@ -87,31 +89,44 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       // B. geometry (straightened)
       //
 
-      // center (before rotate back)
-      mesh.geometry.computeBoundingBox();
+      // 1. center (before rotate back)
+      geometry.computeBoundingBox();
       if (debug) invalidate(); // invalidate to force re-render for box3Helper (after .computeBoundingBox())
-      mesh.geometry.center();
+      geometry.center();
 
-      // rotate back + rotate outerRef
-      mesh.geometry.applyQuaternion(sightDirQuaternionInverse);
+      // 2. rotate back + rotate outerRef (once 1.)
+      geometry.applyQuaternion(sightDirQuaternionInverse);
       outerRef.current?.setRotationFromQuaternion(sightDirQuaternion);
 
-      // re-scale
-      mesh.geometry.boundingBox?.getSize(bboxSize);
-      let scale = 1;
-      if (width) scale = (width * 1) / bboxSize.x; // fit in width
-      if (height) scale = (height * 1) / bboxSize.y; // fit in height
-      if (depth) scale = (depth * 1) / bboxSize.z; // fit in depth
-      if (scale !== 1) mesh.geometry.scale(scale, scale, scale);
+      // 3. origin: substract the geometry to that landmark coords (once 1.)
+      if (origin) {
+        const position = geometry.getAttribute(
+          "position"
+        ) as THREE.BufferAttribute;
+        geometry.translate(
+          -position.getX(origin),
+          -position.getY(origin),
+          -position.getZ(origin)
+        );
+      }
 
-      mesh.geometry.computeVertexNormals();
-      mesh.geometry.attributes.position.needsUpdate = true;
+      // 4. re-scale
+      geometry.boundingBox?.getSize(bboxSize);
+      let scale = 1;
+      if (width) scale = width / bboxSize.x; // fit in width
+      if (height) scale = height / bboxSize.y; // fit in height
+      if (depth) scale = depth / bboxSize.z; // fit in depth
+      if (scale !== 1) geometry.scale(scale, scale, scale);
+
+      geometry.computeVertexNormals();
+      geometry.attributes.position.needsUpdate = true;
     }, [
       face,
       width,
       height,
       depth,
       verticalTri,
+      origin,
       debug,
       invalidate,
       sightDir,
@@ -148,7 +163,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
                 {meshRef.current?.geometry?.boundingBox && (
                   <box3Helper args={[meshRef.current?.geometry.boundingBox]} />
                 )}
-                <Line points={[origin, defaultLookAt]} color={0x00ffff} />
+                <Line points={[[0, 0, 0], defaultLookAt]} color={0x00ffff} />
               </>
             ) : null}
           </mesh>

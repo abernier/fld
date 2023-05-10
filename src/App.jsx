@@ -113,7 +113,7 @@ function Scene() {
 
 function Ground() {
   const gridConfig = {
-    cellSize: 0.125,
+    cellSize: 0.1,
     cellThickness: 0.5,
     cellColor: "#6f6f6f",
     sectionSize: 1,
@@ -124,5 +124,5 @@ function Ground() {
     followCamera: false,
     infiniteGrid: true,
   };
-  return <Grid args={[10.5, 10.5]} {...gridConfig} />;
+  return <Grid args={[10, 10]} {...gridConfig} />;
 }

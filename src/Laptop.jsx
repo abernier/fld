@@ -20,14 +20,14 @@ export const Laptop = forwardRef(({ stream, children, ...props }, fref) => {
   const h = 0.22;
   const d = 0.01;
 
-  const angle = 100;
-  const ratio = 640 / 480;
+  const openAngle = 100;
+  const webcamRatio = 640 / 480;
 
   return (
     <group {...props}>
       <group position-z={-h / 2}>
         {/* Lid */}
-        <group position-y={d / 2} rotation-x={(90 - angle) * DEG2RAD}>
+        <group position-y={d / 2} rotation-x={(90 - openAngle) * DEG2RAD}>
           <Plane
             args={[w - 0.0005, h - 0.0005]}
             position-y={h / 2}
@@ -43,7 +43,7 @@ export const Laptop = forwardRef(({ stream, children, ...props }, fref) => {
               <axesHelper args={[0.05]} />
               <group position-z={0.1}>
                 {/* video */}
-                <Plane args={[0.1 * w, (0.1 * w) / ratio]}>
+                <Plane args={[0.1 * w, (0.1 * w) / webcamRatio]}>
                   <Suspense fallback={null}>
                     <VideoMaterial
                       ref={fref}
@@ -100,7 +100,7 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
   });
 
   const { distance, height } = useControls({
-    distance: { value: 0.5, min: 0, max: 2 },
+    distance: { value: 0.6, min: 0, max: 2 },
     height: { value: -0.1, min: -1, max: 1 },
   });
 
@@ -120,6 +120,14 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
           const { xMin, yMin, width, height } = face.box;
           const x = -(xMin + width / 2 - 640 / 2) / 640;
           const y = -(yMin + height / 2 - 480 / 2) / 480;
+          const l = new THREE.Vector3()
+            .copy(face.keypoints[159])
+            .sub(new THREE.Vector3().copy(face.keypoints[386]))
+            .length();
+          // console.log("l=", l);
+          const vfov = 60;
+          const d = (0.66 * 480) / (2 * Math.tan((vfov * DEG2RAD) / 2) * l);
+          // console.log("d=", d);
           // console.log(x, y);
 
           const SCALE = 0.5;
@@ -134,16 +142,16 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
                 ref={i === 0 ? fref : undefined}
                 face={face}
                 depth={0.1}
+                origin={168}
                 debug
                 rotation-z={Math.PI}
               >
                 <meshStandardMaterial
                   color="#ccc"
                   side={THREE.DoubleSide}
-                  // flatShading={true}
-                  wireframe
+                  flatShading={true}
+                  // wireframe
                 />
-                {/* <meshStandardMaterial color="black" wireframe /> */}
                 {children}
               </Facemesh>
             </group>
