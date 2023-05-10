@@ -6,11 +6,11 @@ import {
   Plane,
   Box,
   Circle,
-  // Facemesh,
+  Facemesh,
 } from "@react-three/drei";
 import { useControls, button, folder } from "leva";
 
-import { Facemesh } from "./components/Facemesh";
+// import { Facemesh } from "./components/Facemesh";
 import { useFaceLandmarksDetection } from "./FaceLandmarksDetection";
 
 const { DEG2RAD } = THREE.MathUtils;
