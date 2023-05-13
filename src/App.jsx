@@ -21,7 +21,7 @@ export default function App() {
   return (
     <>
       <FaceLandmarksDetection>
-        <Canvas shadows camera={{ position: [-0.6, 0.1, 0.6] }}>
+        <Canvas shadows camera={{ position: [-0.6, 0.1, 0.6], near: 0.01 }}>
           <Scene />
         </Canvas>
       </FaceLandmarksDetection>
@@ -30,7 +30,7 @@ export default function App() {
 }
 
 function damp3(current, target, delta) {
-  easing.damp3(current, target, 0.25, delta, undefined, undefined, 0.000000001);
+  easing.damp3(current, target, 1, delta, undefined, undefined, 0.000000001);
 }
 
 function Scene() {

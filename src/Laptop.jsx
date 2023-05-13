@@ -6,11 +6,11 @@ import {
   Plane,
   Box,
   Circle,
-  Facemesh,
+  // Facemesh,
 } from "@react-three/drei";
 import { useControls, button, folder } from "leva";
 
-// import { Facemesh } from "./components/Facemesh";
+import { Facemesh } from "./components/Facemesh";
 import { useFaceLandmarksDetection } from "./FaceLandmarksDetection";
 
 const { DEG2RAD } = THREE.MathUtils;
@@ -20,7 +20,9 @@ export const Laptop = forwardRef(({ stream, children, ...props }, fref) => {
   const h = 0.22;
   const d = 0.01;
 
-  const openAngle = 100;
+  const { openAngle } = useControls({
+    Laptop: folder({ openAngle: { value: 100, min: 0, max: 120 } }),
+  });
   const webcamRatio = 640 / 480;
 
   return (
@@ -95,12 +97,19 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
     const faces = await fld
       .estimateFaces(video)
       .catch((err) => console.log("error estimating faces", err));
-    // console.log("faces=", faces);
+    // console.log(
+    //   "faces=",
+    //   faces[0].keypoints[468].z,
+    //   faces[0].keypoints[469].z,
+    //   faces[0].keypoints[470].z,
+    //   faces[0].keypoints[471].z,
+    //   faces[0].keypoints[472].z
+    // );
     setFaces(faces);
   });
 
   const { distance, height } = useControls({
-    distance: { value: 0.6, min: 0, max: 2 },
+    distance: { value: 0.2, min: 0, max: 2 },
     height: { value: -0.1, min: -1, max: 1 },
   });
 
@@ -135,7 +144,7 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
           return (
             <group
               key={i}
-              position={[SCALE * x, SCALE * y, 0]}
+              // position={[SCALE * x, SCALE * y, 0]}
               //
             >
               <Facemesh
@@ -151,6 +160,8 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
                   side={THREE.DoubleSide}
                   flatShading={true}
                   // wireframe
+                  transparent
+                  opacity={0.9}
                 />
                 {children}
               </Facemesh>
