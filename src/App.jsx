@@ -51,16 +51,16 @@ function Scene() {
   const [lookAtCurrent] = useState(new THREE.Vector3());
   useFrame((_, delta) => {
     if (userCamRef.current && facemeshApiRef.current) {
-      const { meshRef } = facemeshApiRef.current;
+      const { meshRef, irisRightDirRef } = facemeshApiRef.current;
 
       // pos
-      meshRef.current.getWorldPosition(posTarget);
+      irisRightDirRef.current.getWorldPosition(posTarget);
       damp3(posCurrent, posTarget, delta);
       userCamRef.current.position.copy(posCurrent);
 
       // lookAt
       lookAtTarget.copy(
-        meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1))
+        irisRightDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1))
       );
       damp3(lookAtCurrent, lookAtTarget, delta);
       userCamRef.current.lookAt(lookAtCurrent);

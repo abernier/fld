@@ -26,9 +26,33 @@ export type FacemeshProps = {
 export type FacemeshApi = {
   meshRef: React.RefObject<THREE.Mesh>;
   outerRef: React.RefObject<THREE.Group>;
+  irisRightDirRef: React.RefObject<THREE.Group>;
 };
 
 const defaultLookAt = new THREE.Vector3(0, 0, -1);
+
+declare module "three" {
+  interface Object3D {
+    localToLocal(v: THREE.Vector3, obj: THREE.Object3D): THREE.Vector3;
+  }
+}
+const _m1 = new THREE.Matrix4();
+THREE.Object3D.prototype.localToLocal = function (
+  v: THREE.Vector3,
+  obj: THREE.Object3D
+) {
+  const v_world = this.localToWorld(v);
+  return obj.worldToLocal(v_world);
+
+  // this.updateWorldMatrix(true, false);
+  // obj.updateWorldMatrix(true, false);
+
+  // const objMatrixWorldInverse = _m1.copy(obj.matrixWorld).invert();
+  // return v
+  //   .clone()
+  //   .applyMatrix4(this.matrixWorld)
+  //   .applyMatrix4(objMatrixWorldInverse);
+};
 
 const normal = (function () {
   const a = new THREE.Vector3();
@@ -211,10 +235,10 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
         if (eyeRightMeshRef.current && irisRightMeshRef.current) {
           eyeRightDirQuaternion.setFromUnitVectors(
             defaultLookAt,
-            irisRightMeshRef.current.position
-              .clone()
-              .sub(eyeRightMeshRef.current.position)
-              .normalize()
+            irisRightMeshRef.current.localToLocal(
+              new THREE.Vector3(0, 0, 0),
+              eyeRightMeshRef.current
+            )
           );
           irisRightDirRef.current?.setRotationFromQuaternion(
             eyeRightDirQuaternion
@@ -249,6 +273,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       () => ({
         meshRef: faceMeshRef,
         outerRef,
+        irisRightDirRef,
       }),
       []
     );
@@ -261,15 +286,19 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
             {children}
 
             <mesh ref={eyeRightMeshRef}>
-              {/* <sphereGeometry args={[1, 16, 16]} />
-              <meshStandardMaterial color="red" wireframe /> */}
+              <sphereGeometry args={[1, 16, 16]} />
+              <meshStandardMaterial color="red" wireframe />
 
               <axesHelper />
               <group ref={irisRightDirRef}>
                 {debug && (
                   <>
                     <Line
-                      points={[[0, 0, 0], defaultLookAt]}
+                      points={[
+                        [0, 0, 0],
+                        [0, 0, -20],
+                      ]}
+                      lineWidth={3}
                       color={0x00ffff}
                     />
                     <mesh position-z={-1}>
