@@ -157,8 +157,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       //
 
       if (face.keypoints.length > 468 && eyeRightRef.current) {
-        const { eyeRightMeshRef, irisRightMeshRef, irisRightDirRef } =
-          eyeRightRef.current;
+        const { eyeMeshRef, irisMeshRef, irisDirRef } = eyeRightRef.current;
         const position = faceGeometry.getAttribute(
           "position"
         ) as THREE.BufferAttribute;
@@ -171,7 +170,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
         // A. eye mesh
         //
 
-        if (eyeRightMeshRef.current) {
+        if (eyeMeshRef.current) {
           //
           // compute dims
           //
@@ -202,12 +201,12 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
           //
 
           // position it to the eye center
-          eyeRightMeshRef.current.position
+          eyeMeshRef.current.position
             .set(eyeRightCenter.x, eyeRightCenter.y, eyeRightCenter.z)
             .add(eyeRightNormal.multiplyScalar(0.7 * radius));
 
           // size it to eye half-width
-          eyeRightMeshRef.current.scale.setScalar(radius);
+          eyeMeshRef.current.scale.setScalar(radius);
         }
 
         //
@@ -215,27 +214,25 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
         //
 
         // iris mesh
-        if (irisRightMeshRef.current) {
+        if (irisMeshRef.current) {
           // iris is 468th landmark
-          irisRightMeshRef.current.position.set(position.getX(468), position.getY(468), position.getZ(468)); // prettier-ignore
+          irisMeshRef.current.position.set(position.getX(468), position.getY(468), position.getZ(468)); // prettier-ignore
         }
 
         // iris dir
-        if (eyeRightMeshRef.current && irisRightMeshRef.current) {
+        if (eyeMeshRef.current && irisMeshRef.current) {
           // compute the eye direction quaternion
           eyeRightDirQuaternion.setFromUnitVectors(
             defaultLookAt,
             localToLocal(
-              irisRightMeshRef.current,
+              irisMeshRef.current,
               new THREE.Vector3(0, 0, 0),
-              eyeRightMeshRef.current
+              eyeMeshRef.current
             )
           );
 
           // update
-          irisRightDirRef.current?.setRotationFromQuaternion(
-            eyeRightDirQuaternion
-          );
+          irisDirRef.current?.setRotationFromQuaternion(eyeRightDirQuaternion);
         }
       }
 
@@ -297,20 +294,24 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
   }
 );
 
+//
+// 👁️ Eye
+//
+
 type EyeProps = {
   debug?: boolean;
 };
 type EyeApi = {
-  eyeRightMeshRef: React.RefObject<THREE.Mesh>;
-  irisRightMeshRef: React.RefObject<THREE.Mesh>;
-  irisRightDirRef: React.RefObject<THREE.Group>;
+  eyeMeshRef: React.RefObject<THREE.Mesh>;
+  irisMeshRef: React.RefObject<THREE.Mesh>;
+  irisDirRef: React.RefObject<THREE.Group>;
 };
 
 export const Eye = React.forwardRef<EyeApi, EyeProps>(
   ({ debug = true, ...props }, fref) => {
-    const eyeRightMeshRef = React.useRef<THREE.Mesh>(null);
-    const irisRightMeshRef = React.useRef<THREE.Mesh>(null);
-    const irisRightDirRef = React.useRef<THREE.Group>(null);
+    const eyeMeshRef = React.useRef<THREE.Mesh>(null);
+    const irisMeshRef = React.useRef<THREE.Mesh>(null);
+    const irisDirRef = React.useRef<THREE.Group>(null);
 
     //
     // API
@@ -318,9 +319,9 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
 
     const api = React.useMemo<EyeApi>(
       () => ({
-        eyeRightMeshRef,
-        irisRightMeshRef,
-        irisRightDirRef,
+        eyeMeshRef: eyeMeshRef,
+        irisMeshRef: irisMeshRef,
+        irisDirRef: irisDirRef,
       }),
       []
     );
@@ -328,12 +329,12 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
 
     return (
       <group>
-        <mesh ref={eyeRightMeshRef}>
+        <mesh ref={eyeMeshRef}>
           <sphereGeometry args={[1, 16, 16]} />
           <meshStandardMaterial color="red" wireframe />
 
           <axesHelper />
-          <group ref={irisRightDirRef}>
+          <group ref={irisDirRef}>
             {debug && (
               <>
                 <Line
@@ -352,7 +353,7 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
             )}
           </group>
         </mesh>
-        <mesh ref={irisRightMeshRef}>
+        <mesh ref={irisMeshRef}>
           <sphereGeometry args={[0.001, 16, 16]} />
           <meshStandardMaterial color="red" />
         </mesh>

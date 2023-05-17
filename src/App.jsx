@@ -53,7 +53,7 @@ function Scene() {
     if (userCamRef.current && facemeshApiRef.current) {
       const { meshRef, eyeRightRef } = facemeshApiRef.current;
 
-      const { irisRightDirRef } = eyeRightRef.current;
+      const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
 
       // pos
       irisRightDirRef.current.getWorldPosition(posTarget);
