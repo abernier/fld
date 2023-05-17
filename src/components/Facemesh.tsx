@@ -225,8 +225,8 @@ type EyeProps = {
   debug?: boolean;
 };
 type EyeApi = {
-  eyeMeshRef: React.RefObject<THREE.Mesh>;
-  irisMeshRef: React.RefObject<THREE.Mesh>;
+  eyeMeshRef: React.RefObject<THREE.Group>;
+  irisMeshRef: React.RefObject<THREE.Group>;
   irisDirRef: React.RefObject<THREE.Group>;
   update: (faceGeometry: THREE.BufferGeometry) => void;
 };
@@ -248,8 +248,8 @@ const EYE_CONFIG = {
 
 export const Eye = React.forwardRef<EyeApi, EyeProps>(
   ({ side, debug = true, ...props }, fref) => {
-    const eyeMeshRef = React.useRef<THREE.Mesh>(null);
-    const irisMeshRef = React.useRef<THREE.Mesh>(null);
+    const eyeMeshRef = React.useRef<THREE.Group>(null);
+    const irisMeshRef = React.useRef<THREE.Group>(null);
     const irisDirRef = React.useRef<THREE.Group>(null);
 
     const [eyeCenter] = React.useState(() => new THREE.Vector3());
@@ -360,34 +360,41 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
     const color = EYE_CONFIG.color[side];
     return (
       <group>
-        <mesh ref={eyeMeshRef}>
-          <sphereGeometry args={[1, 16, 16]} />
-          <meshStandardMaterial color={color} wireframe />
-
-          <axesHelper />
+        <group ref={eyeMeshRef}>
+          {debug && (
+            <mesh>
+              <sphereGeometry args={[1, 16, 16]} />
+              <meshStandardMaterial color={color} wireframe />
+            </mesh>
+          )}
+          {debug && <axesHelper />}
           <group ref={irisDirRef}>
-            {debug && (
-              <>
+            <>
+              {debug && (
                 <Line
                   points={[
                     [0, 0, 0],
                     [0, 0, -20],
                   ]}
-                  lineWidth={3}
+                  lineWidth={1}
                   color={color}
                 />
-                <mesh position-z={-1}>
-                  <sphereGeometry args={[0.1, 16, 16]} />
-                  <meshStandardMaterial color={color} />
-                </mesh>
-              </>
-            )}
+              )}
+              <mesh position-z={-1}>
+                <sphereGeometry args={[0.1, 16, 16]} />
+                <meshStandardMaterial color={color} />
+              </mesh>
+            </>
           </group>
-        </mesh>
-        <mesh ref={irisMeshRef}>
-          <sphereGeometry args={[0.001, 16, 16]} />
-          <meshStandardMaterial color={color} />
-        </mesh>
+        </group>
+        <group ref={irisMeshRef}>
+          {debug && (
+            <mesh>
+              <sphereGeometry args={[0.001, 16, 16]} />
+              <meshStandardMaterial color={color} />
+            </mesh>
+          )}
+        </group>
       </group>
     );
   }
