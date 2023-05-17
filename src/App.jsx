@@ -29,6 +29,10 @@ export default function App() {
   );
 }
 
+function mean(v1, v2) {
+  return v1.add(v2).multiplyScalar(0.5);
+}
+
 function damp3(current, target, delta) {
   easing.damp3(current, target, 1, delta, undefined, undefined, 0.000000001);
 }
@@ -45,27 +49,49 @@ function Scene() {
 
   const facemeshApiRef = useRef();
 
-  const [posTarget] = useState(new THREE.Vector3());
-  const [posCurrent] = useState(new THREE.Vector3());
-  const [lookAtTarget] = useState(new THREE.Vector3());
-  const [lookAtCurrent] = useState(new THREE.Vector3());
+  const [irisRightDirPos] = useState(() => new THREE.Vector3());
+  const [irisLeftDirPos] = useState(() => new THREE.Vector3());
+  const [posTarget] = useState(() => new THREE.Vector3());
+  const [posCurrent] = useState(() => new THREE.Vector3());
+  const [irisRightLookAt] = useState(() => new THREE.Vector3());
+  const [irisLeftLookAt] = useState(() => new THREE.Vector3());
+  const [lookAtTarget] = useState(() => new THREE.Vector3());
+  const [lookAtCurrent] = useState(() => new THREE.Vector3());
+
   useFrame((_, delta) => {
-    if (userCamRef.current && facemeshApiRef.current) {
-      const { meshRef, eyeRightRef } = facemeshApiRef.current;
+    const userCam = userCamRef.current;
+    const facemeshApi = facemeshApiRef.current;
+
+    if (userCam && facemeshApi) {
+      const { eyeRightRef, eyeLeftRef } = facemeshApi;
 
       const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
+      const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
 
-      // pos
-      irisRightDirRef.current.getWorldPosition(posTarget);
+      const irisRightDir = irisRightDirRef.current;
+      const irisLeftDir = irisLeftDirRef.current;
+
+      //
+      // usercam pos: mean of irisRightDirPos,irisLeftDirPos
+      //
+      irisRightDir.getWorldPosition(irisRightDirPos);
+      irisLeftDir.getWorldPosition(irisLeftDirPos);
+      posTarget.copy(mean(irisRightDirPos, irisLeftDirPos));
       damp3(posCurrent, posTarget, delta);
-      userCamRef.current.position.copy(posCurrent);
+      userCam.position.copy(posCurrent);
 
-      // lookAt
-      lookAtTarget.copy(
-        irisRightDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1))
+      //
+      // usercame lookAt: mean of irisRightLookAt,irisLeftLookAt
+      //
+      irisRightLookAt.copy(
+        irisRightDir.localToWorld(new THREE.Vector3(0, 0, -1))
       );
+      irisLeftLookAt.copy(
+        irisLeftDir.localToWorld(new THREE.Vector3(0, 0, -1))
+      );
+      lookAtTarget.copy(mean(irisRightLookAt, irisLeftLookAt));
       damp3(lookAtCurrent, lookAtTarget, delta);
-      userCamRef.current.lookAt(lookAtCurrent);
+      userCam.lookAt(lookAtCurrent);
     }
   });
 
