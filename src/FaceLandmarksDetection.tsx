@@ -44,7 +44,8 @@ export default function FaceLandmarksDetection({
           faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh,
           {
             runtime: "mediapipe",
-            solutionPath: `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh`,
+            // solutionPath: `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh`,
+            solutionPath: "/mediapipe-facemesh",
             refineLandmarks: true, // iris
             maxFaces: 2,
           }
