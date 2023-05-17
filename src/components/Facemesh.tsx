@@ -26,33 +26,19 @@ export type FacemeshProps = {
 export type FacemeshApi = {
   meshRef: React.RefObject<THREE.Mesh>;
   outerRef: React.RefObject<THREE.Group>;
-  irisRightDirRef: React.RefObject<THREE.Group>;
+  eyeRightRef: React.RefObject<EyeApi>;
 };
 
 const defaultLookAt = new THREE.Vector3(0, 0, -1);
 
-declare module "three" {
-  interface Object3D {
-    localToLocal(v: THREE.Vector3, obj: THREE.Object3D): THREE.Vector3;
-  }
-}
-const _m1 = new THREE.Matrix4();
-THREE.Object3D.prototype.localToLocal = function (
+function localToLocal(
+  objSrc: THREE.Object3D,
   v: THREE.Vector3,
-  obj: THREE.Object3D
+  objTgt: THREE.Object3D
 ) {
-  const v_world = this.localToWorld(v);
-  return obj.worldToLocal(v_world);
-
-  // this.updateWorldMatrix(true, false);
-  // obj.updateWorldMatrix(true, false);
-
-  // const objMatrixWorldInverse = _m1.copy(obj.matrixWorld).invert();
-  // return v
-  //   .clone()
-  //   .applyMatrix4(this.matrixWorld)
-  //   .applyMatrix4(objMatrixWorldInverse);
-};
+  const v_world = objSrc.localToWorld(v);
+  return objTgt.worldToLocal(v_world);
+}
 
 const normal = (function () {
   const a = new THREE.Vector3();
@@ -95,9 +81,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
   ) => {
     const outerRef = React.useRef<THREE.Group>(null);
     const faceMeshRef = React.useRef<THREE.Mesh>(null);
-    const eyeRightMeshRef = React.useRef<THREE.Mesh>(null);
-    const irisRightMeshRef = React.useRef<THREE.Mesh>(null);
-    const irisRightDirRef = React.useRef<THREE.Group>(null);
+    const eyeRightRef = React.useRef<EyeApi>(null);
 
     const [sightDir] = React.useState(() => new THREE.Vector3());
     const [sightDirQuaternion] = React.useState(() => new THREE.Quaternion());
@@ -172,7 +156,9 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       // 5. 👀 eyes
       //
 
-      if (face.keypoints.length > 468) {
+      if (face.keypoints.length > 468 && eyeRightRef.current) {
+        const { eyeRightMeshRef, irisRightMeshRef, irisRightDirRef } =
+          eyeRightRef.current;
         const position = faceGeometry.getAttribute(
           "position"
         ) as THREE.BufferAttribute;
@@ -181,23 +167,25 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
         // right
         //
 
+        //
         // A. eye mesh
+        //
 
         if (eyeRightMeshRef.current) {
           //
           // compute dims
           //
 
-          // get some points
+          // get some eye contour landmarks points (from geometry)
           const eyeContourLandmarks = [33, 133, 159, 145, 153]; // left, right, top, bottom, ...other
           const eyeContourPoints = eyeContourLandmarks.map((i) => new THREE.Vector3(position.getX(i), position.getY(i), position.getZ(i))) // prettier-ignore
 
-          // center
+          // compute center (centroid from eyeContourPoints)
           eyeRightCenter.set(0, 0, 0);
           eyeContourPoints.forEach((v) => eyeRightCenter.add(v));
           eyeRightCenter.divideScalar(eyeContourPoints.length);
 
-          // normal
+          // compute eye normal
           normal(
             eyeContourPoints[2],
             eyeContourPoints[3],
@@ -205,7 +193,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
             eyeRightNormal
           );
 
-          // radius
+          // radius (eye half-width)
           const radius =
             eyeContourPoints[0].sub(eyeContourPoints[1]).length() / 2;
 
@@ -213,33 +201,38 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
           // mesh
           //
 
-          // position to the center
+          // position it to the eye center
           eyeRightMeshRef.current.position
             .set(eyeRightCenter.x, eyeRightCenter.y, eyeRightCenter.z)
             .add(eyeRightNormal.multiplyScalar(0.7 * radius));
 
-          // size to the half-width
+          // size it to eye half-width
           eyeRightMeshRef.current.scale.setScalar(radius);
         }
 
-        // B. iris mesh
+        //
+        // B. iris
+        //
 
+        // iris mesh
         if (irisRightMeshRef.current) {
+          // iris is 468th landmark
           irisRightMeshRef.current.position.set(position.getX(468), position.getY(468), position.getZ(468)); // prettier-ignore
         }
 
-        //
-        //
-        //
-
+        // iris dir
         if (eyeRightMeshRef.current && irisRightMeshRef.current) {
+          // compute the eye direction quaternion
           eyeRightDirQuaternion.setFromUnitVectors(
             defaultLookAt,
-            irisRightMeshRef.current.localToLocal(
+            localToLocal(
+              irisRightMeshRef.current,
               new THREE.Vector3(0, 0, 0),
               eyeRightMeshRef.current
             )
           );
+
+          // update
           irisRightDirRef.current?.setRotationFromQuaternion(
             eyeRightDirQuaternion
           );
@@ -273,7 +266,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       () => ({
         meshRef: faceMeshRef,
         outerRef,
-        irisRightDirRef,
+        eyeRightRef,
       }),
       []
     );
@@ -285,34 +278,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
           <mesh ref={faceMeshRef}>
             {children}
 
-            <mesh ref={eyeRightMeshRef}>
-              <sphereGeometry args={[1, 16, 16]} />
-              <meshStandardMaterial color="red" wireframe />
-
-              <axesHelper />
-              <group ref={irisRightDirRef}>
-                {debug && (
-                  <>
-                    <Line
-                      points={[
-                        [0, 0, 0],
-                        [0, 0, -20],
-                      ]}
-                      lineWidth={3}
-                      color={0x00ffff}
-                    />
-                    <mesh position-z={-1}>
-                      <sphereGeometry args={[0.1, 16, 16]} />
-                      <meshStandardMaterial color="red" />
-                    </mesh>
-                  </>
-                )}
-              </group>
-            </mesh>
-            <mesh ref={irisRightMeshRef}>
-              <sphereGeometry args={[0.001, 16, 16]} />
-              <meshStandardMaterial color="red" />
-            </mesh>
+            <Eye ref={eyeRightRef} />
 
             {debug ? (
               <>
@@ -326,6 +292,70 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
             ) : null}
           </mesh>
         </group>
+      </group>
+    );
+  }
+);
+
+type EyeProps = {
+  debug?: boolean;
+};
+type EyeApi = {
+  eyeRightMeshRef: React.RefObject<THREE.Mesh>;
+  irisRightMeshRef: React.RefObject<THREE.Mesh>;
+  irisRightDirRef: React.RefObject<THREE.Group>;
+};
+
+export const Eye = React.forwardRef<EyeApi, EyeProps>(
+  ({ debug = true, ...props }, fref) => {
+    const eyeRightMeshRef = React.useRef<THREE.Mesh>(null);
+    const irisRightMeshRef = React.useRef<THREE.Mesh>(null);
+    const irisRightDirRef = React.useRef<THREE.Group>(null);
+
+    //
+    // API
+    //
+
+    const api = React.useMemo<EyeApi>(
+      () => ({
+        eyeRightMeshRef,
+        irisRightMeshRef,
+        irisRightDirRef,
+      }),
+      []
+    );
+    React.useImperativeHandle(fref, () => api, [api]);
+
+    return (
+      <group>
+        <mesh ref={eyeRightMeshRef}>
+          <sphereGeometry args={[1, 16, 16]} />
+          <meshStandardMaterial color="red" wireframe />
+
+          <axesHelper />
+          <group ref={irisRightDirRef}>
+            {debug && (
+              <>
+                <Line
+                  points={[
+                    [0, 0, 0],
+                    [0, 0, -20],
+                  ]}
+                  lineWidth={3}
+                  color={0x00ffff}
+                />
+                <mesh position-z={-1}>
+                  <sphereGeometry args={[0.1, 16, 16]} />
+                  <meshStandardMaterial color="red" />
+                </mesh>
+              </>
+            )}
+          </group>
+        </mesh>
+        <mesh ref={irisRightMeshRef}>
+          <sphereGeometry args={[0.001, 16, 16]} />
+          <meshStandardMaterial color="red" />
+        </mesh>
       </group>
     );
   }

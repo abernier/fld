@@ -51,7 +51,9 @@ function Scene() {
   const [lookAtCurrent] = useState(new THREE.Vector3());
   useFrame((_, delta) => {
     if (userCamRef.current && facemeshApiRef.current) {
-      const { meshRef, irisRightDirRef } = facemeshApiRef.current;
+      const { meshRef, eyeRightRef } = facemeshApiRef.current;
+
+      const { irisRightDirRef } = eyeRightRef.current;
 
       // pos
       irisRightDirRef.current.getWorldPosition(posTarget);
