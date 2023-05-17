@@ -93,11 +93,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     }, []);
 
     const [bboxSize] = React.useState(() => new THREE.Vector3());
-    const [eyeRightCenter] = React.useState(() => new THREE.Vector3());
-    const [eyeRightNormal] = React.useState(() => new THREE.Vector3());
-    const [eyeRightDirQuaternion] = React.useState(
-      () => new THREE.Quaternion()
-    );
+
     React.useEffect(() => {
       const faceGeometry = faceMeshRef.current?.geometry;
       if (!faceGeometry) return;
@@ -157,83 +153,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       //
 
       if (face.keypoints.length > 468 && eyeRightRef.current) {
-        const { eyeMeshRef, irisMeshRef, irisDirRef } = eyeRightRef.current;
-        const position = faceGeometry.getAttribute(
-          "position"
-        ) as THREE.BufferAttribute;
-
-        //
-        // right
-        //
-
-        //
-        // A. eye mesh
-        //
-
-        if (eyeMeshRef.current) {
-          //
-          // compute dims
-          //
-
-          // get some eye contour landmarks points (from geometry)
-          const eyeContourLandmarks = [33, 133, 159, 145, 153]; // left, right, top, bottom, ...other
-          const eyeContourPoints = eyeContourLandmarks.map((i) => new THREE.Vector3(position.getX(i), position.getY(i), position.getZ(i))) // prettier-ignore
-
-          // compute center (centroid from eyeContourPoints)
-          eyeRightCenter.set(0, 0, 0);
-          eyeContourPoints.forEach((v) => eyeRightCenter.add(v));
-          eyeRightCenter.divideScalar(eyeContourPoints.length);
-
-          // compute eye normal
-          normal(
-            eyeContourPoints[2],
-            eyeContourPoints[3],
-            eyeContourPoints[4],
-            eyeRightNormal
-          );
-
-          // radius (eye half-width)
-          const radius =
-            eyeContourPoints[0].sub(eyeContourPoints[1]).length() / 2;
-
-          //
-          // mesh
-          //
-
-          // position it to the eye center
-          eyeMeshRef.current.position
-            .set(eyeRightCenter.x, eyeRightCenter.y, eyeRightCenter.z)
-            .add(eyeRightNormal.multiplyScalar(0.7 * radius));
-
-          // size it to eye half-width
-          eyeMeshRef.current.scale.setScalar(radius);
-        }
-
-        //
-        // B. iris
-        //
-
-        // iris mesh
-        if (irisMeshRef.current) {
-          // iris is 468th landmark
-          irisMeshRef.current.position.set(position.getX(468), position.getY(468), position.getZ(468)); // prettier-ignore
-        }
-
-        // iris dir
-        if (eyeMeshRef.current && irisMeshRef.current) {
-          // compute the eye direction quaternion
-          eyeRightDirQuaternion.setFromUnitVectors(
-            defaultLookAt,
-            localToLocal(
-              irisMeshRef.current,
-              new THREE.Vector3(0, 0, 0),
-              eyeMeshRef.current
-            )
-          );
-
-          // update
-          irisDirRef.current?.setRotationFromQuaternion(eyeRightDirQuaternion);
-        }
+        eyeRightRef.current.update(faceGeometry);
       }
 
       faceGeometry.computeVertexNormals();
@@ -250,9 +170,6 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       sightDir,
       sightDirQuaternion,
       bboxSize,
-      eyeRightCenter,
-      eyeRightNormal,
-      eyeRightDirQuaternion,
     ]);
 
     //
@@ -305,6 +222,7 @@ type EyeApi = {
   eyeMeshRef: React.RefObject<THREE.Mesh>;
   irisMeshRef: React.RefObject<THREE.Mesh>;
   irisDirRef: React.RefObject<THREE.Group>;
+  update: (faceGeometry: THREE.BufferGeometry) => void;
 };
 
 export const Eye = React.forwardRef<EyeApi, EyeProps>(
@@ -312,6 +230,92 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
     const eyeMeshRef = React.useRef<THREE.Mesh>(null);
     const irisMeshRef = React.useRef<THREE.Mesh>(null);
     const irisDirRef = React.useRef<THREE.Group>(null);
+
+    const [eyeCenter] = React.useState(() => new THREE.Vector3());
+    const [eyeNormal] = React.useState(() => new THREE.Vector3());
+    const [eyeDirQuaternion] = React.useState(() => new THREE.Quaternion());
+
+    //
+    // update()
+    //
+
+    const update = React.useCallback(
+      (faceGeometry: THREE.BufferGeometry) => {
+        const position = faceGeometry.getAttribute(
+          "position"
+        ) as THREE.BufferAttribute;
+
+        //
+        // A. eye mesh
+        //
+
+        if (eyeMeshRef.current) {
+          //
+          // compute dims
+          //
+
+          // get some eye contour landmarks points (from geometry)
+          const eyeContourLandmarks = [33, 133, 159, 145, 153]; // left, right, top, bottom, ...other
+          const eyeContourPoints = eyeContourLandmarks.map((i) => new THREE.Vector3(position.getX(i), position.getY(i), position.getZ(i))) // prettier-ignore
+
+          // compute center (centroid from eyeContourPoints)
+          eyeCenter.set(0, 0, 0);
+          eyeContourPoints.forEach((v) => eyeCenter.add(v));
+          eyeCenter.divideScalar(eyeContourPoints.length);
+
+          // compute eye normal
+          normal(
+            eyeContourPoints[2],
+            eyeContourPoints[3],
+            eyeContourPoints[4],
+            eyeNormal
+          );
+
+          // radius (eye half-width)
+          const radius =
+            eyeContourPoints[0].sub(eyeContourPoints[1]).length() / 2;
+
+          //
+          // mesh
+          //
+
+          // position it to the eye center
+          eyeMeshRef.current.position
+            .set(eyeCenter.x, eyeCenter.y, eyeCenter.z)
+            .add(eyeNormal.multiplyScalar(0.7 * radius));
+
+          // size it to eye half-width
+          eyeMeshRef.current.scale.setScalar(radius);
+        }
+
+        //
+        // B. iris
+        //
+
+        // iris mesh
+        if (irisMeshRef.current) {
+          // iris is 468th landmark
+          irisMeshRef.current.position.set(position.getX(468), position.getY(468), position.getZ(468)); // prettier-ignore
+        }
+
+        // iris dir
+        if (eyeMeshRef.current && irisMeshRef.current) {
+          // compute the eye direction quaternion
+          eyeDirQuaternion.setFromUnitVectors(
+            defaultLookAt,
+            localToLocal(
+              irisMeshRef.current,
+              new THREE.Vector3(0, 0, 0),
+              eyeMeshRef.current
+            )
+          );
+
+          // update
+          irisDirRef.current?.setRotationFromQuaternion(eyeDirQuaternion);
+        }
+      },
+      [eyeCenter, eyeNormal, eyeDirQuaternion]
+    );
 
     //
     // API
@@ -322,8 +326,9 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
         eyeMeshRef: eyeMeshRef,
         irisMeshRef: irisMeshRef,
         irisDirRef: irisDirRef,
+        update,
       }),
-      []
+      [update]
     );
     React.useImperativeHandle(fref, () => api, [api]);
 
