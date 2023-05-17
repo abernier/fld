@@ -52,7 +52,7 @@ const normal = (function () {
     v1: THREE.Vector3,
     v2: THREE.Vector3,
     v3: THREE.Vector3,
-    v: THREE.Vector3
+    v: THREE.Vector3 // result
   ) {
     a.copy(v1);
     b.copy(v2);
@@ -196,8 +196,8 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
           <mesh ref={faceMeshRef}>
             {children}
 
-            <Eye side="left" ref={eyeRightRef} />
-            <Eye side="right" ref={eyeLeftRef} />
+            <Eye side="left" ref={eyeRightRef} debug={debug} />
+            <Eye side="right" ref={eyeLeftRef} debug={debug} />
 
             {debug ? (
               <>

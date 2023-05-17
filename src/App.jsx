@@ -42,6 +42,7 @@ function Scene() {
 
   const userConfig = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
+    debug: true,
   });
 
   const userCamRef = useRef();
@@ -57,7 +58,6 @@ function Scene() {
   const [irisLeftLookAt] = useState(() => new THREE.Vector3());
   const [lookAtTarget] = useState(() => new THREE.Vector3());
   const [lookAtCurrent] = useState(() => new THREE.Vector3());
-
   useFrame((_, delta) => {
     const userCam = userCamRef.current;
     const facemeshApi = facemeshApiRef.current;
