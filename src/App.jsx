@@ -16,6 +16,7 @@ import { easing } from "maath";
 import FaceLandmarksDetection from "./FaceLandmarksDetection";
 
 import { Laptop } from "./Laptop";
+import { Webcam } from "./Webcam";
 
 export default function App() {
   return (
@@ -38,8 +39,6 @@ function damp3(current, target, delta) {
 }
 
 function Scene() {
-  const [stream, setStream] = useState();
-
   const userConfig = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
     cameraHelper: true,
@@ -110,24 +109,12 @@ function Scene() {
     }
   });
 
-  useEffect(() => {
-    async function f() {
-      setStream(
-        await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            facingMode: "user",
-            // width: 9999, // ask for max res
-          },
-        })
-      );
-    }
-    f().catch(console.error);
-  }, []);
-
   return (
     <>
-      <Laptop ref={facemeshApiRef} castShadow stream={stream} />
+      {/* <Laptop castShadow /> */}
+
+      <Webcam ref={facemeshApiRef} />
+
       <PerspectiveCamera
         ref={userCamRef}
         makeDefault={userConfig.camera === "user"}
@@ -138,7 +125,7 @@ function Scene() {
 
       <CameraControls makeDefault={userConfig.camera === "cc"} />
 
-      <ambientLight intensity={0.2} />
+      {/* <ambientLight intensity={0.2} />
       <spotLight
         castShadow
         position={[1, 5, 3]}
@@ -146,7 +133,7 @@ function Scene() {
         shadow-bias={-0.005}
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-      />
+      /> */}
 
       {/* <axesHelper /> */}
       <Environment preset="city" />
