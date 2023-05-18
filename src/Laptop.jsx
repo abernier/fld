@@ -76,7 +76,7 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
   const video = texture.source.data;
   // console.log("video", video);
 
-  const fld = useFaceLandmarksDetection();
+  const { estimateFaces } = useFaceLandmarksDetection();
   // console.log("fld=", fld);
 
   // useControls(
@@ -94,9 +94,9 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
   //   [fld, video]
   // );
   useFrame(async () => {
-    const faces = await fld
-      .estimateFaces(video)
-      .catch((err) => console.log("error estimating faces", err));
+    const faces = await estimateFaces(video).catch((err) =>
+      console.log("error estimating faces", err)
+    );
     // console.log(
     //   "faces=",
     //   faces[0].keypoints[468].z,
