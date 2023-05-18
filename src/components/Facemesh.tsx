@@ -361,13 +361,16 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
     return (
       <group>
         <group ref={eyeMeshRef}>
+          {debug && <axesHelper />}
+
+          {/* eyeball */}
           {debug && (
             <mesh>
               <sphereGeometry args={[1, 16, 16]} />
               <meshStandardMaterial color={color} wireframe />
             </mesh>
           )}
-          {debug && <axesHelper />}
+
           <group ref={irisDirRef}>
             <>
               {debug && (
@@ -380,6 +383,7 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
                   color={color}
                 />
               )}
+              {/* pupil */}
               <mesh position-z={-1}>
                 <sphereGeometry args={[0.1, 16, 16]} />
                 <meshStandardMaterial color={color} />
@@ -387,7 +391,9 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
             </>
           </group>
         </group>
+
         <group ref={irisMeshRef}>
+          {/* eye landmark point */}
           {debug && (
             <mesh>
               <sphereGeometry args={[0.001, 16, 16]} />

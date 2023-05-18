@@ -42,11 +42,15 @@ function Scene() {
 
   const userConfig = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
+    cameraHelper: true,
     debug: true,
   });
 
   const userCamRef = useRef();
-  useHelper(userConfig.camera !== "user" && userCamRef, THREE.CameraHelper);
+  useHelper(
+    userConfig.cameraHelper && userConfig.camera !== "user" && userCamRef,
+    THREE.CameraHelper
+  );
 
   const facemeshApiRef = useRef();
 
