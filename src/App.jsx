@@ -9,6 +9,7 @@ import {
   CameraControls,
   PerspectiveCamera,
   useHelper,
+  Stats,
 } from "@react-three/drei";
 import { useControls, button, folder } from "leva";
 import { easing } from "maath";
@@ -25,9 +26,10 @@ export default function App() {
   return (
     <>
       <FaceLandmarksDetection>
-        <Canvas shadows camera={{ position: [-0.6, 0.1, 0.6], near: 0.01 }}>
+        <Canvas shadows camera={{ position: [-2, 0.1, 2], near: 0.01 }}>
           <Scene />
         </Canvas>
+        <Stats />
       </FaceLandmarksDetection>
     </>
   );
@@ -120,7 +122,7 @@ function Scene() {
       <Webcam>
         {(faces) => (
           <group
-          // position-y={height}
+          // position-y={0.4}
           // position-z={distance} // 50cm distance with the webcam
           >
             {faces.map((face, i) => {
