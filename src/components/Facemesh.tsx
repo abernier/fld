@@ -84,7 +84,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     fref
   ) => {
     const outerRef = React.useRef<THREE.Group>(null);
-    const faceMeshRef = React.useRef<THREE.Mesh>(null);
+    const meshRef = React.useRef<THREE.Mesh>(null);
     const eyeRightRef = React.useRef<EyeApi>(null);
     const eyeLeftRef = React.useRef<EyeApi>(null);
 
@@ -94,13 +94,13 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     const { invalidate } = useThree();
 
     React.useEffect(() => {
-      faceMeshRef.current?.geometry.setIndex(FacemeshDatas.TRIANGULATION);
+      meshRef.current?.geometry.setIndex(FacemeshDatas.TRIANGULATION);
     }, []);
 
     const [bboxSize] = React.useState(() => new THREE.Vector3());
 
     React.useEffect(() => {
-      const faceGeometry = faceMeshRef.current?.geometry;
+      const faceGeometry = meshRef.current?.geometry;
       if (!faceGeometry) return;
 
       faceGeometry.setFromPoints(face.keypoints as THREE.Vector3[]);
@@ -146,7 +146,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       }
 
       // 4. re-scale
-      faceGeometry.boundingBox?.getSize(bboxSize);
+      faceGeometry.boundingBox!.getSize(bboxSize);
       let scale = 1;
       if (width) scale = width / bboxSize.x; // fit in width
       if (height) scale = height / bboxSize.y; // fit in height
@@ -185,7 +185,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
 
     const api = React.useMemo<FacemeshApi>(
       () => ({
-        meshRef: faceMeshRef,
+        meshRef,
         outerRef,
         eyeRightRef,
         eyeLeftRef,
@@ -197,7 +197,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     return (
       <group {...props}>
         <group ref={outerRef}>
-          <mesh ref={faceMeshRef}>
+          <mesh ref={meshRef}>
             {children}
 
             {eyes && (
@@ -209,12 +209,24 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
 
             {debug ? (
               <>
-                {faceMeshRef.current?.geometry?.boundingBox && (
-                  <box3Helper
-                    args={[faceMeshRef.current?.geometry.boundingBox]}
-                  />
+                {meshRef.current?.geometry?.boundingBox && (
+                  <box3Helper args={[meshRef.current?.geometry.boundingBox]} />
                 )}
-                <Line points={[[0, 0, 0], defaultLookAt]} color={0x00ffff} />
+                <Line
+                  points={[
+                    [0, 0, 0],
+                    [
+                      0,
+                      0,
+                      -(
+                        meshRef.current?.geometry.boundingBox?.getSize(
+                          new THREE.Vector3()
+                        ).z || 1
+                      ),
+                    ],
+                  ]}
+                  color={0x00ffff}
+                />
               </>
             ) : null}
           </mesh>
@@ -385,7 +397,7 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
                 <Line
                   points={[
                     [0, 0, 0],
-                    [0, 0, -20],
+                    [0, 0, -2],
                   ]}
                   lineWidth={1}
                   color={color}

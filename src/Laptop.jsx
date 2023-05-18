@@ -153,7 +153,7 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
                 ref={i === 0 ? fref : undefined}
                 face={face}
                 depth={0.1}
-                origin={168}
+                // origin={168}
                 eyes={eyes}
                 debug={debug}
                 rotation-z={Math.PI}
