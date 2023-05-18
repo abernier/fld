@@ -108,10 +108,11 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
     setFaces(faces);
   });
 
-  const { distance, height, debug } = useControls({
+  const { distance, height, eyes, debug } = useControls({
     distance: { value: 0.2, min: 0, max: 2 },
     height: { value: -0.1, min: -1, max: 1 },
     debug: true,
+    eyes: true,
   });
 
   return (
@@ -153,6 +154,7 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
                 face={face}
                 depth={0.1}
                 origin={168}
+                eyes={eyes}
                 debug={debug}
                 rotation-z={Math.PI}
               >

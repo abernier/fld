@@ -19,6 +19,8 @@ export type FacemeshProps = {
   verticalTri?: [number, number, number];
   /** a landmark index to be the origin of the mesh. default: undefined (ie. the bbox center) */
   origin?: number;
+  /**  */
+  eyes: boolean;
   /** debug mode, default: false */
   debug?: boolean;
 } & JSX.IntrinsicElements["group"];
@@ -74,6 +76,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       depth = 1,
       verticalTri = [159, 386, 200],
       origin,
+      eyes = true,
       debug = false,
       children,
       ...props
@@ -154,7 +157,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       // 5. 👀 eyes
       //
 
-      if (face.keypoints.length > 468) {
+      if (face.keypoints.length > 468 && eyes) {
         eyeRightRef.current?.update(faceGeometry);
         eyeLeftRef.current?.update(faceGeometry);
       }
@@ -168,6 +171,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       depth,
       verticalTri,
       origin,
+      eyes,
       debug,
       invalidate,
       sightDir,
@@ -196,8 +200,12 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
           <mesh ref={faceMeshRef}>
             {children}
 
-            <Eye side="left" ref={eyeRightRef} debug={debug} />
-            <Eye side="right" ref={eyeLeftRef} debug={debug} />
+            {eyes && (
+              <>
+                <Eye side="left" ref={eyeRightRef} debug={debug} />
+                <Eye side="right" ref={eyeLeftRef} debug={debug} />
+              </>
+            )}
 
             {debug ? (
               <>

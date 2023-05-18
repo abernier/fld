@@ -67,33 +67,44 @@ function Scene() {
     const facemeshApi = facemeshApiRef.current;
 
     if (userCam && facemeshApi) {
-      const { eyeRightRef, eyeLeftRef } = facemeshApi;
+      const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
-      const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
-      const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
+      const mesh = meshRef.current;
+      const eyeRight = eyeRightRef.current;
+      const eyeLeft = eyeLeftRef.current;
 
-      const irisRightDir = irisRightDirRef.current;
-      const irisLeftDir = irisLeftDirRef.current;
+      if (eyeRight && eyeLeft) {
+        const { irisDirRef: irisRightDirRef } = eyeRight;
+        const { irisDirRef: irisLeftDirRef } = eyeLeft;
 
-      //
-      // usercam pos: mean of irisRightDirPos,irisLeftDirPos
-      //
-      irisRightDir.getWorldPosition(irisRightDirPos);
-      irisLeftDir.getWorldPosition(irisLeftDirPos);
-      posTarget.copy(mean(irisRightDirPos, irisLeftDirPos));
+        const irisRightDir = irisRightDirRef.current;
+        const irisLeftDir = irisLeftDirRef.current;
+
+        //
+        // usercam pos: mean of irisRightDirPos,irisLeftDirPos
+        //
+        irisRightDir.getWorldPosition(irisRightDirPos);
+        irisLeftDir.getWorldPosition(irisLeftDirPos);
+        posTarget.copy(mean(irisRightDirPos, irisLeftDirPos));
+
+        //
+        // usercame lookAt: mean of irisRightLookAt,irisLeftLookAt
+        //
+        irisRightLookAt.copy(
+          irisRightDir.localToWorld(new THREE.Vector3(0, 0, -1))
+        );
+        irisLeftLookAt.copy(
+          irisLeftDir.localToWorld(new THREE.Vector3(0, 0, -1))
+        );
+        lookAtTarget.copy(mean(irisRightLookAt, irisLeftLookAt));
+      } else {
+        mesh.getWorldPosition(posTarget);
+        lookAtTarget.copy(mesh.localToWorld(new THREE.Vector3(0, 0, -1)));
+      }
+
       damp3(posCurrent, posTarget, delta);
       userCam.position.copy(posCurrent);
 
-      //
-      // usercame lookAt: mean of irisRightLookAt,irisLeftLookAt
-      //
-      irisRightLookAt.copy(
-        irisRightDir.localToWorld(new THREE.Vector3(0, 0, -1))
-      );
-      irisLeftLookAt.copy(
-        irisLeftDir.localToWorld(new THREE.Vector3(0, 0, -1))
-      );
-      lookAtTarget.copy(mean(irisRightLookAt, irisLeftLookAt));
       damp3(lookAtCurrent, lookAtTarget, delta);
       userCam.lookAt(lookAtCurrent);
     }
