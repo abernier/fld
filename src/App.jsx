@@ -148,7 +148,7 @@ function Scene() {
                   <Facemesh
                     ref={i === 0 ? facemeshApiRef : undefined}
                     face={face}
-                    depth={0.1}
+                    depth={0.5}
                     // origin={168}
                     eyes={userConfig.eyes}
                     debug={userConfig.debug}
@@ -174,8 +174,11 @@ function Scene() {
         ref={userCamRef}
         makeDefault={userConfig.camera === "user"}
         fov={50}
+        near={0.4}
+        far={1.5}
       />
 
+      {/* <axesHelper /> */}
       <Ground />
 
       <CameraControls makeDefault={userConfig.camera === "cc"} />
@@ -190,7 +193,6 @@ function Scene() {
         shadow-mapSize-height={2048}
       /> */}
 
-      {/* <axesHelper /> */}
       <Environment preset="city" />
     </>
   );
