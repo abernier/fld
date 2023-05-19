@@ -70,7 +70,7 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
     <>
       <meshStandardMaterial map={texture} toneMapped={false} />
 
-      {functional ? children(faces) : children}
+      {functional ? children(faces, texture) : children}
     </>
   );
 });

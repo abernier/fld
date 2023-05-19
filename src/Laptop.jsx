@@ -11,7 +11,7 @@ export const Laptop = forwardRef(({ children, ...props }, fref) => {
   const d = 0.01;
 
   const { openAngle } = useControls({
-    Laptop: folder({ openAngle: { value: 100, min: 0, max: 120 } }),
+    Laptop: folder({ openAngle: { value: 94, min: 0, max: 120 } }),
   });
 
   const d2 = d / 10;
@@ -25,6 +25,7 @@ export const Laptop = forwardRef(({ children, ...props }, fref) => {
             <meshStandardMaterial color="gray" side={THREE.DoubleSide} />
             <Plane args={[w, h]} position-z={d2 / 2 + 0.0001}>
               <meshStandardMaterial color="black" />
+              {children}
             </Plane>
           </Box>
         </group>
