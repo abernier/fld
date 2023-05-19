@@ -26,7 +26,7 @@ export default function App() {
   return (
     <>
       <FaceLandmarksDetection>
-        <Canvas shadows camera={{ position: [-2, 0.1, 2], near: 0.01 }}>
+        <Canvas shadows camera={{ position: [-0.6, 0.1, 0.6], near: 0.01 }}>
           <Scene />
         </Canvas>
         <Stats />
@@ -47,6 +47,8 @@ function Scene() {
   const userConfig = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
     cameraHelper: true,
+    distance: { value: 0.4, min: 0, max: 2 },
+    height: { value: 0.08, min: -0.5, max: 0.5 },
     eyes: true,
     debug: true,
   });
@@ -117,13 +119,13 @@ function Scene() {
 
   return (
     <>
-      {/* <Laptop castShadow /> */}
+      <Laptop castShadow position-z={-0} />
 
       <Webcam>
         {(faces) => (
           <group
-          // position-y={0.4}
-          // position-z={distance} // 50cm distance with the webcam
+            position-y={userConfig.height}
+            position-z={userConfig.distance} // 50cm distance with the webcam
           >
             {faces.map((face, i) => {
               const { xMin, yMin, width, height } = face.box;
@@ -150,7 +152,7 @@ function Scene() {
                   <Facemesh
                     ref={i === 0 ? facemeshApiRef : undefined}
                     face={face}
-                    depth={0.5}
+                    depth={0.13}
                     // origin={168}
                     eyes={userConfig.eyes}
                     debug={userConfig.debug}
@@ -175,9 +177,9 @@ function Scene() {
       <PerspectiveCamera
         ref={userCamRef}
         makeDefault={userConfig.camera === "user"}
-        fov={50}
-        near={0.4}
-        far={1.5}
+        fov={70}
+        near={0.1}
+        far={1}
       />
 
       {/* <axesHelper /> */}
