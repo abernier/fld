@@ -74,7 +74,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       width,
       height,
       depth = 1,
-      verticalTri = [159, 386, 200],
+      verticalTri = [159, 386, 152],
       origin,
       eyes = true,
       debug = false,

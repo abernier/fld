@@ -48,7 +48,7 @@ function Scene() {
     camera: { value: "cc", options: ["user", "cc"] },
     cameraHelper: true,
     distance: { value: 0.4, min: 0, max: 2 },
-    height: { value: 0.08, min: -0.5, max: 0.5 },
+    height: { value: 0.1, min: -0.5, max: 0.5 },
     eyes: true,
     debug: true,
   });
@@ -146,7 +146,7 @@ function Scene() {
               return (
                 <group
                   key={i}
-                  // position={[SCALE * x, SCALE * y, 0]}
+                  position={[SCALE * x, SCALE * y, 0]}
                   //
                 >
                   <Facemesh
