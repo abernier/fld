@@ -122,7 +122,7 @@ function Scene() {
       <Webcam>
         {(faces, texture) => (
           <>
-            <Laptop castShadow position-z={-0}>
+            <Laptop castShadow position-z={-0} flipHorizontal>
               <meshStandardMaterial map={texture} />
             </Laptop>
             <group
