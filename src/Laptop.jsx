@@ -13,33 +13,20 @@ export const Laptop = forwardRef(({ children, ...props }, fref) => {
   const { openAngle } = useControls({
     Laptop: folder({ openAngle: { value: 100, min: 0, max: 120 } }),
   });
-  const webcamRatio = 640 / 480;
+
+  const d2 = d / 10;
 
   return (
     <group {...props}>
       <group position-z={-h / 2}>
         {/* Lid */}
         <group position-y={d / 2} rotation-x={(90 - openAngle) * DEG2RAD}>
-          <Plane
-            args={[w - 0.0005, h - 0.0005]}
-            position-y={h / 2}
-            position-z={0.00001}
-          >
-            <meshStandardMaterial color="black" />
-          </Plane>
-          <Plane args={[w, h]} position-y={h / 2}>
+          <Box args={[w, h, d2]} position-y={h / 2} position-z={-d2 / 2}>
             <meshStandardMaterial color="gray" side={THREE.DoubleSide} />
-
-            {/* webcam */}
-            {/* <group position-y={h / 2 - 0.03 * h}>
-              <axesHelper args={[0.05]} />
-              <group position-z={0.1}>
-                <Plane args={[0.1 * w, (0.1 * w) / webcamRatio]}>
-                  {children}
-                </Plane>
-              </group>
-            </group> */}
-          </Plane>
+            <Plane args={[w, h]} position-z={d2 / 2 + 0.0001}>
+              <meshStandardMaterial color="black" />
+            </Plane>
+          </Box>
         </group>
         {/* Base */}
         <Box position-z={h / 2} args={[w, d, h]}>
