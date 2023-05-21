@@ -428,6 +428,10 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
   }
 );
 
+//
+// Sample datas
+//
+
 export const FacemeshDatas = {
   // Extracted from: https://github.com/tensorflow/tfjs-models/blob/a8f500809f5afe38feea27870c77e7ba03a6ece4/face-landmarks-detection/demos/shared/triangulation.js
   // prettier-ignore

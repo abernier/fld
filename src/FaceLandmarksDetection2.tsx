@@ -44,11 +44,11 @@ export default function FaceLandmarksDetection({
           baseOptions: {
             // modelAssetPath: // "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task"
             modelAssetPath: new URL("/face_landmarker.task", import.meta.url).toString(), // prettier-ignore
-            // delegate: "GPU",
+            delegate: "GPU",
           },
           runningMode: "VIDEO",
-          outputFaceBlendshapes: true,
-          outputFacialTransformationMatrixes: true,
+          outputFaceBlendshapes: false,
+          outputFacialTransformationMatrixes: false,
         });
 
         console.log("faceLandmarkder", faceLandmarker);
