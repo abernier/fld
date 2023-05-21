@@ -187,8 +187,8 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
 
     const api = React.useMemo<FacemeshApi>(
       () => ({
-        meshRef,
         outerRef,
+        meshRef,
         eyeRightRef,
         eyeLeftRef,
       }),
