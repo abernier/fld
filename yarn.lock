@@ -1397,6 +1397,11 @@
   resolved "https://registry.yarnpkg.com/@mediapipe/face_mesh/-/face_mesh-0.4.1633559619.tgz#f917e4448e25bc375a905d1d910f1bca450c5e23"
   integrity sha512-Vc8cdjxS5+O2gnjWH9KncYpUCVXT0h714KlWAsyqJvJbIgUJBqpppbIx8yWcAzBDxm/5cYSuBI5p5ySIPxzcEg==
 
+"@mediapipe/tasks-vision@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@mediapipe/tasks-vision/-/tasks-vision-0.10.0.tgz#d95a816f66889dcb15545636ac7fc78588c1d705"
+  integrity sha512-l7Sqdw9EgO758tLrt+jDqqKnYKjeOFgzC9MRcE4qZnh/XG/o7JBacEF4cAzes+2wsElRCVoVGf8ETllIqgBzWA==
+
 "@nicolo-ribaudo/eslint-scope-5-internals@5.1.1-v1":
   version "5.1.1-v1"
   resolved "https://registry.yarnpkg.com/@nicolo-ribaudo/eslint-scope-5-internals/-/eslint-scope-5-internals-5.1.1-v1.tgz#dbf733a965ca47b1973177dc0bb6c889edcfb129"

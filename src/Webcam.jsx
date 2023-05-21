@@ -2,7 +2,7 @@ import { useState, Suspense, forwardRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useVideoTexture } from "@react-three/drei";
 
-import { useFaceLandmarksDetection } from "./FaceLandmarksDetection";
+import { useFaceLandmarksDetection } from "./FaceLandmarksDetection2";
 
 const isFunction = (node) => typeof node === "function";
 
@@ -58,10 +58,12 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
   //   },
   //   [fld, video]
   // );
-  useFrame(async () => {
-    const faces = await estimateFaces(video).catch((err) =>
-      console.log("error estimating faces", err)
-    );
+  useFrame(async ({ clock }) => {
+    const faces = await estimateFaces(
+      video,
+      clock.getElapsedTime() * 1000 // ms
+    ).catch((err) => console.log("error estimating faces", err));
+    // console.log("faces=", faces);
     setFaces(faces);
   });
 
@@ -70,7 +72,7 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
     <>
       <meshStandardMaterial map={texture} toneMapped={false} />
 
-      {functional ? children(faces, texture) : children}
+      {functional ? children(faces.faceLandmarks, texture) : children}
     </>
   );
 });
