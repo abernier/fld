@@ -24,13 +24,15 @@ export const Laptop = forwardRef(
           <group position-y={d / 2} rotation-x={(90 - openAngle) * DEG2RAD}>
             <Box args={[w, h, d2]} position-y={h / 2} position-z={-d2 / 2}>
               <meshStandardMaterial color="gray" side={THREE.DoubleSide} />
-              <Plane
-                args={[w, h]}
-                position-z={d2 / 2 + 0.0001}
-                scale-x={flipHorizontal ? -1 : 1}
-              >
+              <Plane args={[w, h]} position-z={d2 / 2 + 0.0001}>
                 <meshStandardMaterial color="black" />
-                {children}
+                <Plane
+                  args={[w - w / 100, h - h / 100]}
+                  position-z={0.0001}
+                  scale-x={flipHorizontal ? -1 : 1}
+                >
+                  {children}
+                </Plane>
               </Plane>
             </Box>
           </group>
