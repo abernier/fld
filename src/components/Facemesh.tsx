@@ -4,15 +4,17 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { Line } from "@react-three/drei";
 
-export type MediaPipeFaceMesh =
-  | typeof FacemeshDatas.SAMPLE_FACELANDMARKSDETECTION_FACE.keypoints
-  | typeof FacemeshDatas.SAMPLE_TASKSVISON_FACELANDMARKERRESULT.faceLandmarks;
+export type MediaPipeFaceMesh = typeof FacemeshDatas.SAMPLE_FACE;
+
+export type MediaPipePoints =
+  | typeof FacemeshDatas.SAMPLE_FACE.keypoints
+  | (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceLandmarks)[0];
 
 export type FacemeshProps = {
-  /** an array of 468+ keypoints, default: a lambda face */
-  points?: MediaPipeFaceMesh;
-  /** @deprecated */
-  face: FacemeshProps["points"];
+  /** an array of 468+ keypoints as return by mediapipe tasks-vision, default: a lambda face */
+  points?: MediaPipePoints;
+  /** @deprecated an face object as returned by face-landmarks-detection */
+  face?: MediaPipeFaceMesh;
   /** width of the mesh, default: undefined */
   width?: number;
   /** or height of the mesh, default: undefined */
@@ -23,8 +25,8 @@ export type FacemeshProps = {
   verticalTri?: [number, number, number];
   /** a landmark index to be the origin of the mesh. default: undefined (ie. the bbox center) */
   origin?: number;
-  /**  */
-  eyes: boolean;
+  /** whether to enable eyes (if >468 points), default: true */
+  eyes?: boolean;
   /** debug mode, default: false */
   debug?: boolean;
 } & JSX.IntrinsicElements["group"];
@@ -32,8 +34,8 @@ export type FacemeshProps = {
 export type FacemeshApi = {
   meshRef: React.RefObject<THREE.Mesh>;
   outerRef: React.RefObject<THREE.Group>;
-  eyeRightRef: React.RefObject<EyeApi>;
-  eyeLeftRef: React.RefObject<EyeApi>;
+  eyeRightRef: React.RefObject<FacemeshEyeApi>;
+  eyeLeftRef: React.RefObject<FacemeshEyeApi>;
 };
 
 const defaultLookAt = new THREE.Vector3(0, 0, -1);
@@ -74,7 +76,7 @@ const normal = (function () {
 export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
   (
     {
-      points = FacemeshDatas.SAMPLE_FACELANDMARKSDETECTION_FACE.keypoints,
+      points = FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceLandmarks[0],
       face,
       width,
       height,
@@ -89,14 +91,14 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     fref
   ) => {
     if (face) {
-      points = face;
+      points = face.keypoints;
       console.warn("Facemesh `face` prop is deprecated: use `points` instead");
     }
 
     const outerRef = React.useRef<THREE.Group>(null);
     const meshRef = React.useRef<THREE.Mesh>(null);
-    const eyeRightRef = React.useRef<EyeApi>(null);
-    const eyeLeftRef = React.useRef<EyeApi>(null);
+    const eyeRightRef = React.useRef<FacemeshEyeApi>(null);
+    const eyeLeftRef = React.useRef<FacemeshEyeApi>(null);
 
     const [sightDir] = React.useState(() => new THREE.Vector3());
     const [sightDirQuaternion] = React.useState(() => new THREE.Quaternion());
@@ -212,8 +214,8 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
 
             {eyes && (
               <>
-                <Eye side="left" ref={eyeRightRef} debug={debug} />
-                <Eye side="right" ref={eyeLeftRef} debug={debug} />
+                <FacemeshEye side="left" ref={eyeRightRef} debug={debug} />
+                <FacemeshEye side="right" ref={eyeLeftRef} debug={debug} />
               </>
             )}
 
@@ -250,18 +252,18 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
 // 👁️ Eye
 //
 
-type EyeProps = {
+export type FacemeshEyeProps = {
   side: "left" | "right";
   debug?: boolean;
 };
-type EyeApi = {
+export type FacemeshEyeApi = {
   eyeMeshRef: React.RefObject<THREE.Group>;
   irisMeshRef: React.RefObject<THREE.Group>;
   irisDirRef: React.RefObject<THREE.Group>;
   update: (faceGeometry: THREE.BufferGeometry) => void;
 };
 
-const EYE_CONFIG = {
+const FACEMESH_EYE_CONFIG = {
   contourLandmarks: {
     right: [33, 133, 159, 145, 153],
     left: [263, 362, 386, 374, 380],
@@ -276,8 +278,8 @@ const EYE_CONFIG = {
   },
 };
 
-export const Eye = React.forwardRef<EyeApi, EyeProps>(
-  ({ side, debug = true, ...props }, fref) => {
+export const FacemeshEye = React.forwardRef<FacemeshEyeApi, FacemeshEyeProps>(
+  ({ side, debug = true }, fref) => {
     const eyeMeshRef = React.useRef<THREE.Group>(null);
     const irisMeshRef = React.useRef<THREE.Group>(null);
     const irisDirRef = React.useRef<THREE.Group>(null);
@@ -306,7 +308,8 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
           //
 
           // get some eye contour landmarks points (from geometry)
-          const eyeContourLandmarks = EYE_CONFIG.contourLandmarks[side];
+          const eyeContourLandmarks =
+            FACEMESH_EYE_CONFIG.contourLandmarks[side];
           const eyeContourPoints = eyeContourLandmarks.map((i) => new THREE.Vector3(position.getX(i), position.getY(i), position.getZ(i))) // prettier-ignore
 
           // compute center (centroid from eyeContourPoints)
@@ -349,7 +352,7 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
 
         // iris mesh
         if (irisMeshRef.current) {
-          const irisLandmark = EYE_CONFIG.irisLandmark[side];
+          const irisLandmark = FACEMESH_EYE_CONFIG.irisLandmark[side];
           irisMeshRef.current.position.set(position.getX(irisLandmark), position.getY(irisLandmark), position.getZ(irisLandmark)); // prettier-ignore
         }
 
@@ -376,7 +379,7 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
     // API
     //
 
-    const api = React.useMemo<EyeApi>(
+    const api = React.useMemo<FacemeshEyeApi>(
       () => ({
         eyeMeshRef: eyeMeshRef,
         irisMeshRef: irisMeshRef,
@@ -387,7 +390,7 @@ export const Eye = React.forwardRef<EyeApi, EyeProps>(
     );
     React.useImperativeHandle(fref, () => api, [api]);
 
-    const color = EYE_CONFIG.color[side];
+    const color = FACEMESH_EYE_CONFIG.color[side];
     return (
       <group>
         <group ref={eyeMeshRef}>
@@ -448,7 +451,7 @@ export const FacemeshDatas = {
   ],
   // My face as default (captured with a 640x480 webcam)
   // prettier-ignore
-  SAMPLE_FACELANDMARKSDETECTION_FACE: {
+  SAMPLE_FACE: {
     "keypoints": [
       {"x":356.2804412841797,"y":295.1960563659668,"z":-23.786449432373047,"name":"lips"},
       {"x":354.8859405517578,"y":264.69520568847656,"z":-36.718435287475586},
@@ -466,7 +469,7 @@ export const FacemeshDatas = {
   },
   // Tasks-vision: https://developers.google.com/mediapipe/solutions/vision/face_landmarker/web_js
   // prettier-ignore
-  SAMPLE_TASKSVISON_FACELANDMARKERRESULT: {
+  SAMPLE_FACELANDMARKER_RESULT: {
     "faceLandmarks": [
       [
         { "x": 0.5760777592658997, "y": 0.8639070391654968, "z": -0.030997956171631813 },
