@@ -1,8 +1,9 @@
 import { useState, Suspense, forwardRef, useEffect } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useVideoTexture } from "@react-three/drei";
 
 import { useFaceLandmarksDetection } from "./FaceLandmarksDetection2";
+import useInterval from "./components/useInterval";
 
 const isFunction = (node) => typeof node === "function";
 
@@ -36,33 +37,20 @@ export const Webcam = forwardRef(({ children, ...props }, fref) => {
 const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
   const [faces, setFaces] = useState([]);
 
+  const clock = useThree((state) => state.clock);
+
   const texture = useVideoTexture(src);
 
   const video = texture.source.data;
   // console.log("video", video);
 
   const { estimateFaces } = useFaceLandmarksDetection();
-  // console.log("fld=", fld);
 
-  // useControls(
-  //   {
-  //     FDL: folder({
-  //       estimateFaces: button(async (get) => {
-  //         const faces = await fld
-  //           .estimateFaces(video, { flipHorizontal: false })
-  //           .catch((err) => console.log("error estimating faces", err));
-  //         console.log("faces=", faces);
-  //         setFaces(faces);
-  //       }),
-  //     }),
-  //   },
-  //   [fld, video]
-  // );
-  useFrame(async ({ clock }) => {
-    const faces = await estimateFaces(
-      video,
-      clock.getElapsedTime() * 1000 // ms
-    ).catch((err) => console.log("error estimating faces", err));
+  useFrame(async () => {
+    const timestamp = clock.getElapsedTime() * 1000;
+    const faces = await estimateFaces(video, timestamp).catch((err) =>
+      console.log("error estimating faces", err)
+    );
     // console.log("faces=", faces);
     setFaces(faces);
   });
@@ -72,7 +60,7 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
     <>
       <meshStandardMaterial map={texture} toneMapped={false} />
 
-      {functional ? children(faces.faceLandmarks, texture) : children}
+      {functional ? children(faces, texture) : children}
     </>
   );
 });

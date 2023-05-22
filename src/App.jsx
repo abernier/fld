@@ -120,64 +120,70 @@ function Scene() {
   return (
     <>
       <Webcam>
-        {(faces, texture) => (
-          <>
-            <Laptop castShadow position-z={-0} flipHorizontal>
-              <meshStandardMaterial map={texture} />
-            </Laptop>
-            <group
-              position-y={userConfig.height}
-              position-z={userConfig.distance} // 50cm distance with the webcam
-            >
-              {faces?.length > 0
-                ? faces.map((face, i) => {
-                    // const { xMin, yMin, width, height } = face.box;
-                    // const x = -(xMin + width / 2 - 640 / 2) / 640;
-                    // const y = -(yMin + height / 2 - 480 / 2) / 480;
-                    // const l = new THREE.Vector3()
-                    //   .copy(face.keypoints[159])
-                    //   .sub(new THREE.Vector3().copy(face.keypoints[386]))
-                    //   .length();
-                    // console.log("l=", l);
-                    // const vfov = 60;
-                    // const d =
-                    //   (0.66 * 480) / (2 * Math.tan((vfov * DEG2RAD) / 2) * l);
-                    // console.log("d=", d);
-                    // console.log(x, y);
+        {(faces, texture) => {
+          faces = faces.faceLandmarks || faces;
 
-                    const SCALE = 0.5;
+          return (
+            <>
+              <Laptop castShadow position-z={-0} flipHorizontal>
+                <meshStandardMaterial map={texture} />
+              </Laptop>
 
-                    return (
-                      <group
-                        key={i}
-                        // position={[SCALE * x, SCALE * y, 0]}
-                        //
-                      >
-                        <Facemesh
-                          ref={i === 0 ? facemeshApiRef : undefined}
-                          face={face}
-                          depth={0.13}
-                          // origin={168}
-                          eyes={userConfig.eyes}
-                          debug={userConfig.debug}
-                          rotation-z={Math.PI}
+              <group
+                position-y={userConfig.height}
+                position-z={userConfig.distance} // 50cm distance with the webcam
+              >
+                {faces?.length > 0
+                  ? faces.map((face, i) => {
+                      // const { xMin, yMin, width, height } = face.box;
+                      // const x = -(xMin + width / 2 - 640 / 2) / 640;
+                      // const y = -(yMin + height / 2 - 480 / 2) / 480;
+                      // const l = new THREE.Vector3()
+                      //   .copy(face.keypoints[159])
+                      //   .sub(new THREE.Vector3().copy(face.keypoints[386]))
+                      //   .length();
+                      // console.log("l=", l);
+                      // const vfov = 60;
+                      // const d =
+                      //   (0.66 * 480) / (2 * Math.tan((vfov * DEG2RAD) / 2) * l);
+                      // console.log("d=", d);
+                      // console.log(x, y);
+                      // const SCALE = 0.5;
+
+                      const points = face.keypoints || face;
+
+                      return (
+                        <group
+                          key={i}
+                          // position={[SCALE * x, SCALE * y, 0]}
+                          //
                         >
-                          <meshStandardMaterial
-                            color="#ccc"
-                            side={THREE.DoubleSide}
-                            flatShading={true}
-                            // wireframe
-                            transparent
-                            opacity={0.9}
-                          />
-                        </Facemesh>
-                      </group>
-                    );
-                  })
-                : null}
-            </group>
-          </>
-        )}
+                          <Facemesh
+                            ref={i === 0 ? facemeshApiRef : undefined}
+                            points={points}
+                            depth={0.13}
+                            // origin={168}
+                            eyes={userConfig.eyes}
+                            debug={userConfig.debug}
+                            rotation-z={Math.PI}
+                          >
+                            <meshStandardMaterial
+                              color="#ccc"
+                              side={THREE.DoubleSide}
+                              flatShading={true}
+                              // wireframe
+                              transparent
+                              opacity={0.9}
+                            />
+                          </Facemesh>
+                        </group>
+                      );
+                    })
+                  : null}
+              </group>
+            </>
+          );
+        }}
       </Webcam>
 
       <PerspectiveCamera
@@ -192,16 +198,6 @@ function Scene() {
       <Ground />
 
       <CameraControls makeDefault={userConfig.camera === "cc"} />
-
-      {/* <ambientLight intensity={0.2} />
-      <spotLight
-        castShadow
-        position={[1, 5, 3]}
-        penumbra={0.2}
-        shadow-bias={-0.005}
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-      /> */}
 
       <Environment preset="city" />
     </>

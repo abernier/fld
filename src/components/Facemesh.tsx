@@ -9,8 +9,10 @@ export type MediaPipeFaceMesh =
   | typeof FacemeshDatas.SAMPLE_TASKSVISON_FACELANDMARKERRESULT.faceLandmarks;
 
 export type FacemeshProps = {
-  /** a MediaPipeFaceMesh object, default: a lambda face */
-  face?: MediaPipeFaceMesh;
+  /** an array of 468+ keypoints, default: a lambda face */
+  points?: MediaPipeFaceMesh;
+  /** @deprecated */
+  face: FacemeshProps["points"];
   /** width of the mesh, default: undefined */
   width?: number;
   /** or height of the mesh, default: undefined */
@@ -72,7 +74,8 @@ const normal = (function () {
 export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
   (
     {
-      face = FacemeshDatas.SAMPLE_FACELANDMARKSDETECTION_FACE.keypoints,
+      points = FacemeshDatas.SAMPLE_FACELANDMARKSDETECTION_FACE.keypoints,
+      face,
       width,
       height,
       depth = 1,
@@ -85,6 +88,11 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     },
     fref
   ) => {
+    if (face) {
+      points = face;
+      console.warn("Facemesh `face` prop is deprecated: use `points` instead");
+    }
+
     const outerRef = React.useRef<THREE.Group>(null);
     const meshRef = React.useRef<THREE.Mesh>(null);
     const eyeRightRef = React.useRef<EyeApi>(null);
@@ -105,7 +113,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       const faceGeometry = meshRef.current?.geometry;
       if (!faceGeometry) return;
 
-      faceGeometry.setFromPoints(face as THREE.Vector3[]);
+      faceGeometry.setFromPoints(points as THREE.Vector3[]);
       faceGeometry.setDrawRange(0, FacemeshDatas.TRIANGULATION.length);
 
       //
@@ -113,9 +121,9 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       //
 
       normal(
-        face[verticalTri[0]] as THREE.Vector3,
-        face[verticalTri[1]] as THREE.Vector3,
-        face[verticalTri[2]] as THREE.Vector3,
+        points[verticalTri[0]] as THREE.Vector3,
+        points[verticalTri[1]] as THREE.Vector3,
+        points[verticalTri[2]] as THREE.Vector3,
         sightDir
       );
 
@@ -159,7 +167,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       // 5. 👀 eyes
       //
 
-      if (face.length > 468 && eyes) {
+      if (points.length > 468 && eyes) {
         eyeRightRef.current?.update(faceGeometry);
         eyeLeftRef.current?.update(faceGeometry);
       }
@@ -167,7 +175,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       faceGeometry.computeVertexNormals();
       faceGeometry.attributes.position.needsUpdate = true;
     }, [
-      face,
+      points,
       width,
       height,
       depth,
