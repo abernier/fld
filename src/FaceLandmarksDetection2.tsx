@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import {
   createContext,
   ReactNode,
@@ -21,48 +22,41 @@ type FaceLandmarksDetectionProps = {
   children: ReactNode;
 };
 
+function absUrl(url: string) {
+  return new URL(url, import.meta.url).toString();
+}
+const visionWasmBasePath = absUrl("/tasks-vision-wasm");
+const visionModelAssetPath = absUrl("/face_landmarker.task");
+
 export default function FaceLandmarksDetection({
   children,
   ...props
 }: FaceLandmarksDetectionProps) {
-  const creatingFaceLandmarkerRef = useRef(false); // singleton
-
   const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker>();
   useEffect(() => {
-    async function createFaceLandmarker() {
-      if (creatingFaceLandmarkerRef.current === false) {
-        creatingFaceLandmarkerRef.current = true;
+    let ret: FaceLandmarker;
 
-        const vision = await FilesetResolver.forVisionTasks(
-          new URL("/tasks-vision-wasm", import.meta.url).toString()
-          // "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.1.0-alpha-16/wasm"
-        );
-        console.log("vision", vision);
-
-        // see mediapipe doc: https://developers.google.com/mediapipe/solutions/vision/face_landmarker/web_js
-        const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+    FilesetResolver.forVisionTasks(visionWasmBasePath)
+      .then((vision) =>
+        FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
-            // modelAssetPath: // "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task"
-            modelAssetPath: new URL("/face_landmarker.task", import.meta.url).toString(), // prettier-ignore
+            modelAssetPath: visionModelAssetPath,
             delegate: "GPU",
           },
           runningMode: "VIDEO",
           outputFaceBlendshapes: false,
-          outputFacialTransformationMatrixes: false,
-        });
+          outputFacialTransformationMatrixes: true,
+        })
+      )
+      .then((faceLandmarker) => {
+        ret = faceLandmarker;
+        setFaceLandmarker(ret);
+      })
+      .catch((err) =>
+        console.error("error while creating facelandmarker", err)
+      );
 
-        console.log("faceLandmarkder", faceLandmarker);
-        setFaceLandmarker(faceLandmarker);
-
-        creatingFaceLandmarkerRef.current = false;
-      } else {
-        console.log("skipping, still creating...");
-      }
-    }
-
-    createFaceLandmarker().catch((err) =>
-      console.error("error while creating faceLandmarker", err)
-    );
+    return () => void ret?.close();
   }, []);
 
   //
@@ -76,7 +70,9 @@ export default function FaceLandmarksDetection({
         throw new Error("cannot estimate (yet), faceLandmarker not ready");
       }
 
-      return await faceLandmarker.detectForVideo(input, timestamp);
+      const results = await faceLandmarker.detectForVideo(input, timestamp);
+
+      return results;
     },
     [faceLandmarker]
   );
