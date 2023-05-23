@@ -135,7 +135,7 @@ function Scene() {
     <>
       <Webcam>
         {(faces, texture) => {
-          const _faces = faces.faceLandmarks || faces;
+          const _faces = (faces && faces.faceLandmarks) || faces;
 
           return (
             <>
