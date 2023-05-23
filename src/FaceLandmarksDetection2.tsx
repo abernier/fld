@@ -22,10 +22,6 @@ type FaceLandmarksDetectionProps = {
   children: ReactNode;
 };
 
-function absUrl(url: string) {
-  return new URL(url, import.meta.url).toString();
-}
-
 export default function FaceLandmarksDetection({
   children,
   ...props
@@ -34,11 +30,16 @@ export default function FaceLandmarksDetection({
   useEffect(() => {
     let ret: FaceLandmarker;
 
-    FilesetResolver.forVisionTasks(absUrl("/tasks-vision-wasm"))
+    FilesetResolver.forVisionTasks(
+      new URL("/tasks-vision-wasm", import.meta.url).toString()
+    )
       .then((vision) =>
         FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
-            modelAssetPath: absUrl("/face_landmarker.task"),
+            modelAssetPath: new URL(
+              "/face_landmarker.task",
+              import.meta.url
+            ).toString(),
             delegate: "GPU",
           },
           runningMode: "VIDEO",
