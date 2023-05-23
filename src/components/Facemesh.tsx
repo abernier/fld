@@ -15,6 +15,8 @@ export type FacemeshProps = {
   points?: MediaPipePoints;
   /** @deprecated an face object as returned by face-landmarks-detection */
   face?: MediaPipeFaceMesh;
+  /**  */
+  facialTransformationMatrix?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.facialTransformationMatrixes)[0];
   /** width of the mesh, default: undefined */
   width?: number;
   /** or height of the mesh, default: undefined */
@@ -78,6 +80,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     {
       points = FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceLandmarks[0],
       face,
+      facialTransformationMatrix,
       width,
       height,
       depth = 1,
@@ -101,6 +104,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     const eyeLeftRef = React.useRef<FacemeshEyeApi>(null);
 
     const [sightDir] = React.useState(() => new THREE.Vector3());
+    const [transform] = React.useState(() => new THREE.Object3D());
     const [sightDirQuaternion] = React.useState(() => new THREE.Quaternion());
 
     const { invalidate } = useThree();
@@ -119,17 +123,38 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       faceGeometry.setDrawRange(0, FacemeshDatas.TRIANGULATION.length);
 
       //
-      // A. compute sightDir vector (normal to verticalTri)
+      // A. compute sightDir vector
+      //
+      //  - either from `facialTransformationMatrix` if available
+      //  - or from `verticalTri`
       //
 
-      normal(
-        points[verticalTri[0]] as THREE.Vector3,
-        points[verticalTri[1]] as THREE.Vector3,
-        points[verticalTri[2]] as THREE.Vector3,
-        sightDir
-      );
+      if (facialTransformationMatrix) {
+        // from facialTransformationMatrix
+        transform.matrix.fromArray(facialTransformationMatrix.data);
+        transform.matrix.decompose(
+          transform.position,
+          transform.quaternion,
+          transform.scale
+        );
 
-      sightDirQuaternion.setFromUnitVectors(defaultLookAt, sightDir);
+        // y and z axes are inverted
+        transform.rotation.y *= -1;
+        transform.rotation.z *= -1;
+
+        sightDirQuaternion.setFromEuler(transform.rotation);
+      } else {
+        // normal to verticalTri
+        normal(
+          points[verticalTri[0]] as THREE.Vector3,
+          points[verticalTri[1]] as THREE.Vector3,
+          points[verticalTri[2]] as THREE.Vector3,
+          sightDir
+        );
+
+        sightDirQuaternion.setFromUnitVectors(defaultLookAt, sightDir);
+      }
+
       const sightDirQuaternionInverse = sightDirQuaternion.clone().invert();
 
       //
@@ -178,6 +203,8 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       faceGeometry.attributes.position.needsUpdate = true;
     }, [
       points,
+      facialTransformationMatrix,
+      transform,
       width,
       height,
       depth,

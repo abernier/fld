@@ -71,7 +71,6 @@ export default function FaceLandmarksDetection({
       }
 
       const results = await faceLandmarker.detectForVideo(input, timestamp);
-
       return results;
     },
     [faceLandmarker]

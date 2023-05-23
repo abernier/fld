@@ -49,6 +49,7 @@ function Scene() {
     cameraHelper: true,
     distance: { value: 0.4, min: 0, max: 2 },
     height: { value: 0.12, min: -0.5, max: 0.5 },
+    facialTransformationMatrix: true,
     eyes: true,
     debug: true,
   });
@@ -121,7 +122,7 @@ function Scene() {
     <>
       <Webcam>
         {(faces, texture) => {
-          faces = faces.faceLandmarks || faces;
+          const _faces = faces.faceLandmarks || faces;
 
           return (
             <>
@@ -133,8 +134,8 @@ function Scene() {
                 position-y={userConfig.height}
                 position-z={userConfig.distance} // 50cm distance with the webcam
               >
-                {faces?.length > 0
-                  ? faces.map((face, i) => {
+                {_faces?.length > 0
+                  ? _faces.map((face, i) => {
                       // const { xMin, yMin, width, height } = face.box;
                       // const x = -(xMin + width / 2 - 640 / 2) / 640;
                       // const y = -(yMin + height / 2 - 480 / 2) / 480;
@@ -161,6 +162,11 @@ function Scene() {
                           <Facemesh
                             ref={i === 0 ? facemeshApiRef : undefined}
                             points={points}
+                            facialTransformationMatrix={
+                              userConfig.facialTransformationMatrix
+                                ? faces.facialTransformationMatrixes[i]
+                                : undefined
+                            }
                             depth={0.13}
                             // origin={168}
                             eyes={userConfig.eyes}
