@@ -25,8 +25,6 @@ type FaceLandmarksDetectionProps = {
 function absUrl(url: string) {
   return new URL(url, import.meta.url).toString();
 }
-const visionWasmBasePath = absUrl("/tasks-vision-wasm");
-const visionModelAssetPath = absUrl("/face_landmarker.task");
 
 export default function FaceLandmarksDetection({
   children,
@@ -36,11 +34,11 @@ export default function FaceLandmarksDetection({
   useEffect(() => {
     let ret: FaceLandmarker;
 
-    FilesetResolver.forVisionTasks(visionWasmBasePath)
+    FilesetResolver.forVisionTasks(absUrl("/tasks-vision-wasm"))
       .then((vision) =>
         FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
-            modelAssetPath: visionModelAssetPath,
+            modelAssetPath: absUrl("/face_landmarker.task"),
             delegate: "GPU",
           },
           runningMode: "VIDEO",
