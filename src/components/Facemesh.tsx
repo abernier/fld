@@ -17,6 +17,8 @@ export type FacemeshProps = {
   face?: MediaPipeFaceMesh;
   /**  */
   facialTransformationMatrix?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.facialTransformationMatrixes)[0];
+  /**  */
+  offset?: boolean;
   /** width of the mesh, default: undefined */
   width?: number;
   /** or height of the mesh, default: undefined */
@@ -81,6 +83,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       points = FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceLandmarks[0],
       face,
       facialTransformationMatrix,
+      offset,
       width,
       height,
       depth = 1,
@@ -98,6 +101,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       console.warn("Facemesh `face` prop is deprecated: use `points` instead");
     }
 
+    const offsetRef = React.useRef<THREE.Group>(null);
     const outerRef = React.useRef<THREE.Group>(null);
     const meshRef = React.useRef<THREE.Mesh>(null);
     const eyeRightRef = React.useRef<FacemeshEyeApi>(null);
@@ -138,11 +142,17 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
           transform.scale
         );
 
-        // y and z axes are inverted
+        // Rotation: y and z axes are inverted
         transform.rotation.y *= -1;
         transform.rotation.z *= -1;
-
         sightDirQuaternion.setFromEuler(transform.rotation);
+
+        // Offset: y and z axes are inverted
+        if (offset) {
+          transform.position.y *= -1;
+          transform.position.z *= -1;
+          offsetRef.current?.position.copy(transform.position.divideScalar(80));
+        }
       } else {
         // normal to verticalTri
         normal(
@@ -235,40 +245,44 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
 
     return (
       <group {...props}>
-        <group ref={outerRef}>
-          <mesh ref={meshRef}>
-            {children}
+        <group ref={offsetRef}>
+          <group ref={outerRef}>
+            <mesh ref={meshRef}>
+              {children}
 
-            {eyes && (
-              <>
-                <FacemeshEye side="left" ref={eyeRightRef} debug={debug} />
-                <FacemeshEye side="right" ref={eyeLeftRef} debug={debug} />
-              </>
-            )}
+              {eyes && (
+                <>
+                  <FacemeshEye side="left" ref={eyeRightRef} debug={debug} />
+                  <FacemeshEye side="right" ref={eyeLeftRef} debug={debug} />
+                </>
+              )}
 
-            {debug ? (
-              <>
-                {meshRef.current?.geometry?.boundingBox && (
-                  <box3Helper args={[meshRef.current?.geometry.boundingBox]} />
-                )}
-                <Line
-                  points={[
-                    [0, 0, 0],
-                    [
-                      0,
-                      0,
-                      -(
-                        meshRef.current?.geometry.boundingBox?.getSize(
-                          new THREE.Vector3()
-                        ).z || 1
-                      ),
-                    ],
-                  ]}
-                  color={0x00ffff}
-                />
-              </>
-            ) : null}
-          </mesh>
+              {debug ? (
+                <>
+                  {meshRef.current?.geometry?.boundingBox && (
+                    <box3Helper
+                      args={[meshRef.current?.geometry.boundingBox]}
+                    />
+                  )}
+                  <Line
+                    points={[
+                      [0, 0, 0],
+                      [
+                        0,
+                        0,
+                        -(
+                          meshRef.current?.geometry.boundingBox?.getSize(
+                            new THREE.Vector3()
+                          ).z || 1
+                        ),
+                      ],
+                    ]}
+                    color={0x00ffff}
+                  />
+                </>
+              ) : null}
+            </mesh>
+          </group>
         </group>
       </group>
     );

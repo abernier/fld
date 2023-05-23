@@ -46,14 +46,14 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
 
   const { estimateFaces } = useFaceLandmarksDetection();
 
-  useInterval(async () => {
+  useFrame(async () => {
     const timestamp = clock.getElapsedTime() * 1000;
     const faces = await estimateFaces(video, timestamp).catch((err) =>
       console.log("error estimating faces", err)
     );
     // console.log("faces=", faces);
     setFaces(faces);
-  }, 1000 / 15);
+  });
 
   const functional = isFunction(children);
   return (

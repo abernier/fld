@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   Grid,
@@ -39,20 +39,33 @@ function mean(v1, v2) {
   return v1.add(v2).multiplyScalar(0.5);
 }
 
-function damp3(current, target, delta) {
-  easing.damp3(current, target, 1, delta, undefined, undefined, 0.000000001);
-}
-
 function Scene() {
   const userConfig = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
     cameraHelper: true,
-    distance: { value: 0.4, min: 0, max: 2 },
+    smoothTime: { value: 0.25, min: 0.000001, max: 2 },
+    distance: { value: 0, min: 0, max: 2 },
     height: { value: 0.12, min: -0.5, max: 0.5 },
     facialTransformationMatrix: true,
-    eyes: true,
+    offset: true,
+    eyes: false,
     debug: true,
   });
+
+  const damp3 = useCallback(
+    (current, target, delta) => {
+      easing.damp3(
+        current,
+        target,
+        userConfig.smoothTime,
+        delta,
+        undefined,
+        undefined,
+        0.000000001
+      );
+    },
+    [userConfig.smoothTime]
+  );
 
   const userCamRef = useRef();
   useHelper(
@@ -168,10 +181,12 @@ function Scene() {
                                 : undefined
                             }
                             depth={0.13}
+                            offset={userConfig.offset}
                             // origin={168}
                             eyes={userConfig.eyes}
                             debug={userConfig.debug}
                             rotation-z={Math.PI}
+                            visible={userConfig.camera !== "user"}
                           >
                             <meshStandardMaterial
                               color="#ccc"
