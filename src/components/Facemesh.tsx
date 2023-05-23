@@ -19,6 +19,8 @@ export type FacemeshProps = {
   facialTransformationMatrix?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.facialTransformationMatrixes)[0];
   /**  */
   offset?: boolean;
+  /** */
+  offsetScalar: number;
   /** width of the mesh, default: undefined */
   width?: number;
   /** or height of the mesh, default: undefined */
@@ -84,6 +86,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       face,
       facialTransformationMatrix,
       offset,
+      offsetScalar = 80,
       width,
       height,
       depth = 1,
@@ -151,7 +154,9 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
         if (offset) {
           transform.position.y *= -1;
           transform.position.z *= -1;
-          offsetRef.current?.position.copy(transform.position.divideScalar(80));
+          offsetRef.current?.position.copy(
+            transform.position.divideScalar(offsetScalar)
+          );
         }
       } else {
         // normal to verticalTri
@@ -215,6 +220,8 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       points,
       facialTransformationMatrix,
       transform,
+      offset,
+      offsetScalar,
       width,
       height,
       depth,

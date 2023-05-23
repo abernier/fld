@@ -48,6 +48,7 @@ function Scene() {
     height: { value: 0.12, min: -0.5, max: 0.5 },
     facialTransformationMatrix: true,
     offset: true,
+    offsetScalar: { value: 80, min: 0, max: 200 },
     eyes: false,
     debug: true,
   });
@@ -182,6 +183,7 @@ function Scene() {
                             }
                             depth={0.13}
                             offset={userConfig.offset}
+                            offsetScalar={userConfig.offsetScalar}
                             // origin={168}
                             eyes={userConfig.eyes}
                             debug={userConfig.debug}
