@@ -8,6 +8,7 @@ import {
 import {
   FilesetResolver,
   FaceLandmarker as FaceLandmarkerImpl,
+  FaceLandmarkerOptions,
 } from "@mediapipe/tasks-vision";
 
 const FaceLandmarkerContext = createContext(
@@ -15,10 +16,28 @@ const FaceLandmarkerContext = createContext(
 );
 
 type FaceLandmarkerProps = {
-  children: ReactNode;
+  basePath?: string;
+  options?: FaceLandmarkerOptions;
+  children?: ReactNode;
+};
+
+export const FaceLandmarkerDefaults = {
+  basePath: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm",
+  options: {
+    baseOptions: {
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+      delegate: "GPU",
+    },
+    runningMode: "VIDEO",
+    outputFaceBlendshapes: true,
+    outputFacialTransformationMatrixes: true,
+  } as FaceLandmarkerOptions,
 };
 
 export default function FaceLandmarker({
+  basePath = FaceLandmarkerDefaults.basePath,
+  options = FaceLandmarkerDefaults.options,
   children,
   ...props
 }: FaceLandmarkerProps) {
@@ -26,21 +45,8 @@ export default function FaceLandmarker({
   useEffect(() => {
     let ret: FaceLandmarkerImpl;
 
-    const visionBasePath = new URL("/tasks-vision-wasm", import.meta.url).toString() // prettier-ignore
-    const modelAssetPath = new URL("/face_landmarker.task",import.meta.url).toString() // prettier-ignore
-
-    FilesetResolver.forVisionTasks(visionBasePath)
-      .then((vision) =>
-        FaceLandmarkerImpl.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath,
-            delegate: "GPU",
-          },
-          runningMode: "VIDEO",
-          outputFaceBlendshapes: true,
-          outputFacialTransformationMatrixes: true,
-        })
-      )
+    FilesetResolver.forVisionTasks(basePath)
+      .then((vision) => FaceLandmarkerImpl.createFromOptions(vision, options))
       .then((faceLandmarker) => setFaceLandmarker(faceLandmarker))
       .catch((err) =>
         console.error("error while creating faceLandmarker", err)

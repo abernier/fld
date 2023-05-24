@@ -16,14 +16,20 @@ import { easing } from "maath";
 
 import { Facemesh } from "./components/Facemesh";
 
-import FaceLandmarker from "./FaceLandmarker";
+import FaceLandmarker, { FaceLandmarkerDefaults } from "./FaceLandmarker";
 import { Laptop } from "./Laptop";
 import { Webcam } from "./Webcam";
 
 export default function App() {
+  const visionBasePath = new URL("/tasks-vision-wasm", import.meta.url).toString() // prettier-ignore
+  const modelAssetPath = new URL("/face_landmarker.task", import.meta.url).toString() // prettier-ignore
+
+  const faceLandmarkerOptions = { ...FaceLandmarkerDefaults.options };
+  faceLandmarkerOptions.baseOptions.modelAssetPath = modelAssetPath;
+
   return (
     <>
-      <FaceLandmarker>
+      <FaceLandmarker basePath={visionBasePath} options={faceLandmarkerOptions}>
         <Canvas shadows camera={{ position: [-0.6, 0.1, 0.6], near: 0.01 }}>
           <Scene />
         </Canvas>
@@ -154,6 +160,7 @@ function Scene() {
                                 : undefined
                             }
                             faceBlendshapes={
+                              faces.faceBlendshapes &&
                               userConfig.faceBlendshapes
                                 ? faces.faceBlendshapes[i]
                                 : undefined
