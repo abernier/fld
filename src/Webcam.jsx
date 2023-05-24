@@ -44,13 +44,11 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
   const video = texture.source.data;
   // console.log("video", video);
 
-  const { estimateFaces } = useFaceLandmarker();
+  const faceLandmarker = useFaceLandmarker();
 
-  useFrame(async () => {
+  useFrame(() => {
     const timestamp = clock.getElapsedTime() * 1000;
-    const faces = await estimateFaces(video, timestamp).catch((err) =>
-      console.log("error estimating faces", err)
-    );
+    const faces = faceLandmarker.detectForVideo(video, timestamp);
     // console.log("faces=", faces);
     setFaces(faces);
   });

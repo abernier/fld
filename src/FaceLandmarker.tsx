@@ -1,22 +1,18 @@
-import * as THREE from "three";
 import {
   createContext,
   ReactNode,
-  useCallback,
   useContext,
   useEffect,
-  useMemo,
-  useRef,
   useState,
 } from "react";
 import {
   FilesetResolver,
   FaceLandmarker as FaceLandmarkerImpl,
-  FaceLandmarkerResult,
-  ImageSource,
 } from "@mediapipe/tasks-vision";
 
-const FaceLandmarkerContext = createContext({});
+const FaceLandmarkerContext = createContext(
+  {} as FaceLandmarkerImpl | undefined
+);
 
 type FaceLandmarkerProps = {
   children: ReactNode;
@@ -47,33 +43,14 @@ export default function FaceLandmarker({
       )
       .then((faceLandmarker) => setFaceLandmarker(faceLandmarker))
       .catch((err) =>
-        console.error("error while creating facelandmarker", err)
+        console.error("error while creating faceLandmarker", err)
       );
 
     return () => void ret?.close();
   }, []);
 
-  //
-  // api
-  //
-
-  const estimateFaces = useCallback(
-    async function (input: ImageSource, timestamp = Date.now()) {
-      if (!faceLandmarker) {
-        console.log(faceLandmarker);
-        throw new Error("cannot estimate (yet), faceLandmarker not ready");
-      }
-
-      const results = await faceLandmarker.detectForVideo(input, timestamp);
-      return results;
-    },
-    [faceLandmarker]
-  );
-
-  const api = useMemo(() => ({ estimateFaces }), [estimateFaces]);
-
   return (
-    <FaceLandmarkerContext.Provider value={api}>
+    <FaceLandmarkerContext.Provider value={faceLandmarker}>
       {children}
     </FaceLandmarkerContext.Provider>
   );
