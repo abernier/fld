@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import {
   createContext,
   ReactNode,
@@ -8,13 +9,12 @@ import {
   useRef,
   useState,
 } from "react";
-import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
-import type {
-  FaceLandmarksDetector,
-  FaceLandmarksDetectorInput,
-  MediaPipeFaceMeshMediaPipeEstimationConfig,
-  MediaPipeFaceMeshTfjsEstimationConfig,
-} from "@tensorflow-models/face-landmarks-detection";
+import {
+  FilesetResolver,
+  FaceLandmarker,
+  Classifications,
+  ImageSource,
+} from "@mediapipe/tasks-vision";
 
 const FaceLandmarksDetectionContext = createContext({});
 
@@ -26,129 +26,54 @@ export default function FaceLandmarksDetection({
   children,
   ...props
 }: FaceLandmarksDetectionProps) {
-  //
-  // detector
-  //
-
-  const creatingDetectorRef = useRef(false); // singleton
-
-  const [detector, setDetector] = useState<FaceLandmarksDetector>();
+  const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker>();
   useEffect(() => {
-    let dtor: FaceLandmarksDetector;
+    let ret: FaceLandmarker;
 
-    if (creatingDetectorRef.current === false) {
-      creatingDetectorRef.current = true;
+    const visionBasePath = new URL("/tasks-vision-wasm", import.meta.url).toString() // prettier-ignore
+    const modelAssetPath = new URL("/face_landmarker.task",import.meta.url).toString() // prettier-ignore
 
-      faceLandmarksDetection
-        .createDetector(
-          faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh,
-          {
-            runtime: "mediapipe",
-            // solutionPath: `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh`,
-            solutionPath: "/mediapipe-facemesh",
-            refineLandmarks: true, // iris
-            maxFaces: 2,
-          }
-        )
-        .then((d) => {
-          dtor = d;
-          console.log("detector ready", d);
-          setDetector(d);
+    FilesetResolver.forVisionTasks(visionBasePath)
+      .then((vision) =>
+        FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath,
+            delegate: "GPU",
+          },
+          runningMode: "VIDEO",
+          outputFaceBlendshapes: true,
+          outputFacialTransformationMatrixes: true,
         })
-        .catch((err) => console.error("error while creating detector", err))
-        .finally(() => (creatingDetectorRef.current = false));
-    } else {
-      // console.log("skipping, still creating...");
-    }
+      )
+      .then((faceLandmarker) => setFaceLandmarker(faceLandmarker))
+      .catch((err) =>
+        console.error("error while creating facelandmarker", err)
+      );
 
-    // cleanup
-    return () => {
-      dtor?.dispose();
-    };
+    return () => void ret?.close();
   }, []);
-
-  //
-  // video stream
-  //
-
-  const [stream, setStream] = useState<MediaStream>();
-  // useEffect(() => {
-  //   let strm: MediaStream;
-  //   navigator.mediaDevices
-  //     .getUserMedia({
-  //       audio: false,
-  //       video: {
-  //         facingMode: "user"
-  //         // width: 9999, // ask for max res
-  //       }
-  //     })
-  //     .then((s) => {
-  //       strm = s;
-  //       console.log("strm=", strm);
-  //       setStream(s);
-  //     })
-  //     .catch(console.error);
-
-  //   return () => void strm?.getTracks().forEach((track) => track.stop());
-  // }, []);
-
-  const [$video] = useState(document.createElement("video"));
-  // useEffect(() => {
-  //   if (!stream) return;
-
-  //   function onloadedmetadata() {
-  //     console.log("loadedmetadata", $video.videoWidth, $video.videoHeight);
-  //     $video.play();
-  //   }
-  //   $video.addEventListener("loadedmetadata", onloadedmetadata);
-
-  //   function oncanplay() {
-  //     console.log("canplay");
-  //     $video.play();
-  //   }
-  //   $video.addEventListener("canplay", oncanplay);
-
-  //   $video.srcObject = stream; // 🔌 plug the stream into the <video>
-  //   // cleanup
-  //   return () => {
-  //     $video.removeEventListener("loadedmetadata", onloadedmetadata);
-  //     $video.removeEventListener("canplay", oncanplay);
-  //   };
-  // }, [$video, stream]);
 
   //
   // api
   //
 
   const estimateFaces = useCallback(
-    async function (
-      input: FaceLandmarksDetectorInput = $video,
-      estimationConfig:
-        | MediaPipeFaceMeshMediaPipeEstimationConfig
-        | MediaPipeFaceMeshTfjsEstimationConfig
-    ) {
-      if (!detector) {
-        console.log(detector);
-        throw new Error("cannot estimate (yet), detector not ready");
+    async function (input: ImageSource, timestamp = Date.now()) {
+      if (!faceLandmarker) {
+        console.log(faceLandmarker);
+        throw new Error("cannot estimate (yet), faceLandmarker not ready");
       }
 
-      return await detector.estimateFaces(input);
+      const results = await faceLandmarker.detectForVideo(input, timestamp);
+      return results;
     },
-    [detector, $video]
+    [faceLandmarker]
   );
 
-  const value = useMemo(
-    () => ({
-      detector,
-      stream,
-      $video,
-      estimateFaces,
-    }),
-    [detector, stream, $video, estimateFaces]
-  );
+  const api = useMemo(() => ({ estimateFaces }), [estimateFaces]);
 
   return (
-    <FaceLandmarksDetectionContext.Provider value={value}>
+    <FaceLandmarksDetectionContext.Provider value={api}>
       {children}
     </FaceLandmarksDetectionContext.Provider>
   );

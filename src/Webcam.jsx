@@ -2,7 +2,7 @@ import { useState, Suspense, forwardRef, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useVideoTexture } from "@react-three/drei";
 
-import { useFaceLandmarksDetection } from "./FaceLandmarksDetection2";
+import { useFaceLandmarksDetection } from "./FaceLandmarksDetection";
 import useInterval from "./components/useInterval";
 
 const isFunction = (node) => typeof node === "function";

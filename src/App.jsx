@@ -16,7 +16,7 @@ import { easing } from "maath";
 
 import { Facemesh } from "./components/Facemesh";
 
-import FaceLandmarksDetection from "./FaceLandmarksDetection2";
+import FaceLandmarksDetection from "./FaceLandmarksDetection";
 import { Laptop } from "./Laptop";
 import { Webcam } from "./Webcam";
 
@@ -43,30 +43,28 @@ function Scene() {
   const userConfig = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
     cameraHelper: true,
-    smoothTime: { value: 0.25, min: 0.000001, max: 2 },
+    smoothTimePos: { value: 0.25, min: 0.000001, max: 2 },
     distance: { value: 0, min: 0, max: 2 },
-    height: { value: 0.12, min: -0.5, max: 0.5 },
+    height: { value: 0.25, min: -0.5, max: 0.5 },
     facialTransformationMatrix: true,
+    faceBlendshapes: true,
     offset: true,
     offsetScalar: { value: 80, min: 0, max: 200 },
-    eyes: false,
+    eyes: true,
     debug: true,
   });
 
-  const damp3 = useCallback(
-    (current, target, delta) => {
-      easing.damp3(
-        current,
-        target,
-        userConfig.smoothTime,
-        delta,
-        undefined,
-        undefined,
-        0.000000001
-      );
-    },
-    [userConfig.smoothTime]
-  );
+  const damp3 = useCallback((current, target, smoothTime = 0.25, delta) => {
+    easing.damp3(
+      current,
+      target,
+      smoothTime,
+      delta,
+      undefined,
+      undefined,
+      0.000000001
+    );
+  }, []);
 
   const userCamRef = useRef();
   useHelper(
@@ -91,43 +89,38 @@ function Scene() {
     if (userCam && facemeshApi) {
       const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
-      const mesh = meshRef.current;
-      const eyeRight = eyeRightRef.current;
-      const eyeLeft = eyeLeftRef.current;
-
-      if (eyeRight && eyeLeft) {
-        const { irisDirRef: irisRightDirRef } = eyeRight;
-        const { irisDirRef: irisLeftDirRef } = eyeLeft;
-
-        const irisRightDir = irisRightDirRef.current;
-        const irisLeftDir = irisLeftDirRef.current;
+      if (eyeRightRef.current && eyeLeftRef.current) {
+        const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
+        const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
 
         //
         // usercam pos: mean of irisRightDirPos,irisLeftDirPos
         //
-        irisRightDir.getWorldPosition(irisRightDirPos);
-        irisLeftDir.getWorldPosition(irisLeftDirPos);
+        irisRightDirRef.current.getWorldPosition(irisRightDirPos);
+        irisLeftDirRef.current.getWorldPosition(irisLeftDirPos);
         posTarget.copy(mean(irisRightDirPos, irisLeftDirPos));
 
         //
-        // usercame lookAt: mean of irisRightLookAt,irisLeftLookAt
+        // usercam lookAt: mean of irisRightLookAt,irisLeftLookAt
         //
         irisRightLookAt.copy(
-          irisRightDir.localToWorld(new THREE.Vector3(0, 0, -1))
+          irisRightDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1))
         );
         irisLeftLookAt.copy(
-          irisLeftDir.localToWorld(new THREE.Vector3(0, 0, -1))
+          irisLeftDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1))
         );
         lookAtTarget.copy(mean(irisRightLookAt, irisLeftLookAt));
       } else {
-        mesh.getWorldPosition(posTarget);
-        lookAtTarget.copy(mesh.localToWorld(new THREE.Vector3(0, 0, -1)));
+        meshRef.current.getWorldPosition(posTarget);
+        lookAtTarget.copy(
+          meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1))
+        );
       }
 
-      damp3(posCurrent, posTarget, delta);
+      damp3(posCurrent, posTarget, userConfig.smoothTimePos, delta);
       userCam.position.copy(posCurrent);
 
-      damp3(lookAtCurrent, lookAtTarget, delta);
+      damp3(lookAtCurrent, lookAtTarget, userConfig.smoothTimePos, delta);
       userCam.lookAt(lookAtCurrent);
     }
   });
@@ -150,35 +143,21 @@ function Scene() {
               >
                 {_faces?.length > 0
                   ? _faces.map((face, i) => {
-                      // const { xMin, yMin, width, height } = face.box;
-                      // const x = -(xMin + width / 2 - 640 / 2) / 640;
-                      // const y = -(yMin + height / 2 - 480 / 2) / 480;
-                      // const l = new THREE.Vector3()
-                      //   .copy(face.keypoints[159])
-                      //   .sub(new THREE.Vector3().copy(face.keypoints[386]))
-                      //   .length();
-                      // console.log("l=", l);
-                      // const vfov = 60;
-                      // const d =
-                      //   (0.66 * 480) / (2 * Math.tan((vfov * DEG2RAD) / 2) * l);
-                      // console.log("d=", d);
-                      // console.log(x, y);
-                      // const SCALE = 0.5;
-
                       const points = face.keypoints || face;
 
                       return (
-                        <group
-                          key={i}
-                          // position={[SCALE * x, SCALE * y, 0]}
-                          //
-                        >
+                        <group key={i}>
                           <Facemesh
                             ref={i === 0 ? facemeshApiRef : undefined}
                             points={points}
                             facialTransformationMatrix={
                               userConfig.facialTransformationMatrix
                                 ? faces.facialTransformationMatrixes[i]
+                                : undefined
+                            }
+                            faceBlendshapes={
+                              userConfig.faceBlendshapes
+                                ? faces.faceBlendshapes[i]
                                 : undefined
                             }
                             depth={0.13}
