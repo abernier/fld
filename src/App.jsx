@@ -16,21 +16,19 @@ import { easing } from "maath";
 
 import { Facemesh } from "./components/Facemesh";
 
-import FaceLandmarksDetection from "./FaceLandmarksDetection";
+import FaceLandmarker from "./FaceLandmarker";
 import { Laptop } from "./Laptop";
 import { Webcam } from "./Webcam";
-
-const { DEG2RAD } = THREE.MathUtils;
 
 export default function App() {
   return (
     <>
-      <FaceLandmarksDetection>
+      <FaceLandmarker>
         <Canvas shadows camera={{ position: [-0.6, 0.1, 0.6], near: 0.01 }}>
           <Scene />
         </Canvas>
         <Stats />
-      </FaceLandmarksDetection>
+      </FaceLandmarker>
     </>
   );
 }

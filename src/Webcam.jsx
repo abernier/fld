@@ -2,7 +2,7 @@ import { useState, Suspense, forwardRef, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useVideoTexture } from "@react-three/drei";
 
-import { useFaceLandmarksDetection } from "./FaceLandmarksDetection";
+import { useFaceLandmarker } from "./FaceLandmarker";
 import useInterval from "./components/useInterval";
 
 const isFunction = (node) => typeof node === "function";
@@ -44,7 +44,7 @@ const VideoMaterial = forwardRef(({ src, children, ...props }, fref) => {
   const video = texture.source.data;
   // console.log("video", video);
 
-  const { estimateFaces } = useFaceLandmarksDetection();
+  const { estimateFaces } = useFaceLandmarker();
 
   useFrame(async () => {
     const timestamp = clock.getElapsedTime() * 1000;

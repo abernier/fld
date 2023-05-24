@@ -11,31 +11,31 @@ import {
 } from "react";
 import {
   FilesetResolver,
-  FaceLandmarker,
-  Classifications,
+  FaceLandmarker as FaceLandmarkerImpl,
+  FaceLandmarkerResult,
   ImageSource,
 } from "@mediapipe/tasks-vision";
 
-const FaceLandmarksDetectionContext = createContext({});
+const FaceLandmarkerContext = createContext({});
 
-type FaceLandmarksDetectionProps = {
+type FaceLandmarkerProps = {
   children: ReactNode;
 };
 
-export default function FaceLandmarksDetection({
+export default function FaceLandmarker({
   children,
   ...props
-}: FaceLandmarksDetectionProps) {
-  const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker>();
+}: FaceLandmarkerProps) {
+  const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarkerImpl>();
   useEffect(() => {
-    let ret: FaceLandmarker;
+    let ret: FaceLandmarkerImpl;
 
     const visionBasePath = new URL("/tasks-vision-wasm", import.meta.url).toString() // prettier-ignore
     const modelAssetPath = new URL("/face_landmarker.task",import.meta.url).toString() // prettier-ignore
 
     FilesetResolver.forVisionTasks(visionBasePath)
       .then((vision) =>
-        FaceLandmarker.createFromOptions(vision, {
+        FaceLandmarkerImpl.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath,
             delegate: "GPU",
@@ -73,12 +73,12 @@ export default function FaceLandmarksDetection({
   const api = useMemo(() => ({ estimateFaces }), [estimateFaces]);
 
   return (
-    <FaceLandmarksDetectionContext.Provider value={api}>
+    <FaceLandmarkerContext.Provider value={api}>
       {children}
-    </FaceLandmarksDetectionContext.Provider>
+    </FaceLandmarkerContext.Provider>
   );
 }
 
-export function useFaceLandmarksDetection() {
-  return useContext(FaceLandmarksDetectionContext);
+export function useFaceLandmarker() {
+  return useContext(FaceLandmarkerContext);
 }
