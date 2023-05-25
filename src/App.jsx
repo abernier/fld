@@ -47,7 +47,7 @@ function Scene() {
     // faceBlendshapes: true,
     offset: true,
     offsetScalar: { value: 80, min: 0, max: 200 },
-    eyes: true,
+    eyes: false,
   });
 
   const userCamRef = useRef();
