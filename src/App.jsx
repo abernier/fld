@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import {
   Grid,
   AccumulativeShadows,
@@ -10,15 +10,15 @@ import {
   PerspectiveCamera,
   useHelper,
   Stats,
+  Box,
+  useGLTF,
+  Center,
 } from "@react-three/drei";
 import { useControls, button, folder } from "leva";
-import { easing } from "maath";
 
-import { Facemesh } from "./components/Facemesh";
+import FaceLandmarker, { FaceLandmarkerDefaults } from "./components/FaceLandmarker";
 
-import FaceLandmarker, { FaceLandmarkerDefaults } from "./FaceLandmarker";
-import { Laptop } from "./Laptop";
-import { Webcam } from "./Webcam";
+import { FaceControls } from "./components/FaceControls";
 
 export default function App() {
   const visionBasePath = new URL("/tasks-vision-wasm", import.meta.url).toString() // prettier-ignore
@@ -39,36 +39,18 @@ export default function App() {
   );
 }
 
-function mean(v1, v2) {
-  return v1.add(v2).multiplyScalar(0.5);
-}
-
 function Scene() {
   const userConfig = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
     cameraHelper: true,
-    smoothTimePos: { value: 0.25, min: 0.000001, max: 2 },
-    distance: { value: 0, min: 0, max: 2 },
-    height: { value: 0.25, min: -0.5, max: 0.5 },
-    facialTransformationMatrix: true,
-    faceBlendshapes: true,
-    offset: true,
-    offsetScalar: { value: 80, min: 0, max: 200 },
-    eyes: true,
-    debug: true,
+    // smoothTimePos: { value: 0.25, min: 0.000001, max: 2 },
+    // facialTransformationMatrix: true,
+    // faceBlendshapes: true,
+    // offset: true,
+    // offsetScalar: { value: 80, min: 0, max: 200 },
+    // eyes: true,
+    // debug: true,
   });
-
-  const damp3 = useCallback((current, target, smoothTime = 0.25, delta) => {
-    easing.damp3(
-      current,
-      target,
-      smoothTime,
-      delta,
-      undefined,
-      undefined,
-      0.000000001
-    );
-  }, []);
 
   const userCamRef = useRef();
   useHelper(
@@ -76,135 +58,32 @@ function Scene() {
     THREE.CameraHelper
   );
 
-  const facemeshApiRef = useRef();
-
-  const [irisRightDirPos] = useState(() => new THREE.Vector3());
-  const [irisLeftDirPos] = useState(() => new THREE.Vector3());
-  const [posTarget] = useState(() => new THREE.Vector3());
-  const [posCurrent] = useState(() => new THREE.Vector3());
-  const [irisRightLookAt] = useState(() => new THREE.Vector3());
-  const [irisLeftLookAt] = useState(() => new THREE.Vector3());
-  const [lookAtTarget] = useState(() => new THREE.Vector3());
-  const [lookAtCurrent] = useState(() => new THREE.Vector3());
-  useFrame((_, delta) => {
-    const userCam = userCamRef.current;
-    const facemeshApi = facemeshApiRef.current;
-
-    if (userCam && facemeshApi) {
-      const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
-
-      if (eyeRightRef.current && eyeLeftRef.current) {
-        const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
-        const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
-
-        //
-        // usercam pos: mean of irisRightDirPos,irisLeftDirPos
-        //
-        irisRightDirRef.current.getWorldPosition(irisRightDirPos);
-        irisLeftDirRef.current.getWorldPosition(irisLeftDirPos);
-        posTarget.copy(mean(irisRightDirPos, irisLeftDirPos));
-
-        //
-        // usercam lookAt: mean of irisRightLookAt,irisLeftLookAt
-        //
-        irisRightLookAt.copy(
-          irisRightDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1))
-        );
-        irisLeftLookAt.copy(
-          irisLeftDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1))
-        );
-        lookAtTarget.copy(mean(irisRightLookAt, irisLeftLookAt));
-      } else {
-        meshRef.current.getWorldPosition(posTarget);
-        lookAtTarget.copy(
-          meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1))
-        );
-      }
-
-      damp3(posCurrent, posTarget, userConfig.smoothTimePos, delta);
-      userCam.position.copy(posCurrent);
-
-      damp3(lookAtCurrent, lookAtTarget, userConfig.smoothTimePos, delta);
-      userCam.lookAt(lookAtCurrent);
-    }
-  });
+  const [userCam, setUserCam] = useState();
 
   return (
     <>
-      <Webcam>
-        {(faces, texture) => {
-          const _faces = (faces && faces.faceLandmarks) || faces;
+      <Center top>
+        <Suzi rotation={[-0.63, 0, 0]} scale={0.1} />
+      </Center>
 
-          return (
-            <>
-              <Laptop castShadow position-z={-0} flipHorizontal>
-                <meshStandardMaterial map={texture} />
-              </Laptop>
-
-              <group
-                position-y={userConfig.height}
-                position-z={userConfig.distance} // 50cm distance with the webcam
-              >
-                {_faces?.length > 0
-                  ? _faces.map((face, i) => {
-                      const points = face.keypoints || face;
-
-                      return (
-                        <group key={i}>
-                          <Facemesh
-                            ref={i === 0 ? facemeshApiRef : undefined}
-                            points={points}
-                            facialTransformationMatrix={
-                              userConfig.facialTransformationMatrix
-                                ? faces.facialTransformationMatrixes[i]
-                                : undefined
-                            }
-                            faceBlendshapes={
-                              faces.faceBlendshapes &&
-                              userConfig.faceBlendshapes
-                                ? faces.faceBlendshapes[i]
-                                : undefined
-                            }
-                            depth={0.13}
-                            offset={userConfig.offset}
-                            offsetScalar={userConfig.offsetScalar}
-                            // origin={168}
-                            eyes={userConfig.eyes}
-                            debug={userConfig.debug}
-                            rotation-z={Math.PI}
-                            visible={userConfig.camera !== "user"}
-                          >
-                            <meshStandardMaterial
-                              color="#ccc"
-                              side={THREE.DoubleSide}
-                              flatShading={true}
-                              // wireframe
-                              transparent
-                              opacity={0.9}
-                            />
-                          </Facemesh>
-                        </group>
-                      );
-                    })
-                  : null}
-              </group>
-            </>
-          );
-        }}
-      </Webcam>
-
+      <FaceControls camera={userCam} visible={userConfig.camera !== "user"} />
       <PerspectiveCamera
-        ref={userCamRef}
+        ref={(cam) => {
+          userCamRef.current = cam;
+          setUserCam(cam);
+        }}
         makeDefault={userConfig.camera === "user"}
+        position={[0, 0.2, 0]}
         fov={70}
         near={0.1}
-        far={1}
+        far={2}
       />
 
       {/* <axesHelper /> */}
       <Ground />
+      {/* <Shadows /> */}
 
-      <CameraControls makeDefault={userConfig.camera === "cc"} />
+      <CameraControls />
 
       <Environment preset="city" />
     </>
@@ -226,3 +105,29 @@ function Ground() {
   };
   return <Grid args={[10, 10]} {...gridConfig} />;
 }
+
+const Suzi = (props, ref) => {
+  const { nodes } = useGLTF(
+    "https://market-assets.fra1.cdn.digitaloceanspaces.com/market-assets/models/suzanne-high-poly/model.gltf"
+  );
+  return (
+    <>
+      <mesh castShadow receiveShadow geometry={nodes.Suzanne.geometry} {...props}>
+        <meshStandardMaterial color="#9d4b4b" />
+      </mesh>
+    </>
+  );
+};
+
+const Shadows = memo(() => (
+  <AccumulativeShadows
+    temporal
+    frames={100}
+    color="#9d4b4b"
+    colorBlend={0.5}
+    alphaTest={0.9}
+    scale={20}
+  >
+    <RandomizedLight amount={8} radius={4} position={[5, 5, -10]} />
+  </AccumulativeShadows>
+));

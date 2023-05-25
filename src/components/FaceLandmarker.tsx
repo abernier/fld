@@ -53,7 +53,7 @@ export default function FaceLandmarker({
       );
 
     return () => void ret?.close();
-  }, []);
+  }, [basePath, options]);
 
   return (
     <FaceLandmarkerContext.Provider value={faceLandmarker}>

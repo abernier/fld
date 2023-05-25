@@ -16,14 +16,6 @@ export type FacemeshProps = {
   points?: MediaPipePoints;
   /** @deprecated an face object as returned by face-landmarks-detection */
   face?: MediaPipeFaceMesh;
-  /**  */
-  facialTransformationMatrix?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.facialTransformationMatrixes)[0];
-  /**  */
-  offset?: boolean;
-  /** */
-  offsetScalar?: number;
-  /** */
-  faceBlendshapes?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceBlendshapes)[0];
   /** width of the mesh, default: undefined */
   width?: number;
   /** or height of the mesh, default: undefined */
@@ -34,8 +26,16 @@ export type FacemeshProps = {
   verticalTri?: [number, number, number];
   /** a landmark index to be the origin of the mesh. default: undefined (ie. the bbox center) */
   origin?: number;
+  /**  */
+  facialTransformationMatrix?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.facialTransformationMatrixes)[0];
+  /**  */
+  offset?: boolean;
+  /** */
+  offsetScalar?: number;
   /** whether to enable eyes (if >468 points), default: true */
   eyes?: boolean;
+  /** */
+  faceBlendshapes?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceBlendshapes)[0];
   /** debug mode, default: false */
   debug?: boolean;
 } & JSX.IntrinsicElements["group"];
@@ -205,8 +205,8 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       //
 
       if (points.length > 468 && eyes) {
-        eyeRightRef.current?.update(faceGeometry, faceBlendshapes);
-        eyeLeftRef.current?.update(faceGeometry, faceBlendshapes);
+        eyeRightRef.current?._update(faceGeometry, faceBlendshapes);
+        eyeLeftRef.current?._update(faceGeometry, faceBlendshapes);
       }
 
       faceGeometry.computeVertexNormals();
@@ -303,7 +303,7 @@ export type FacemeshEyeProps = {
 export type FacemeshEyeApi = {
   eyeMeshRef: React.RefObject<THREE.Group>;
   irisDirRef: React.RefObject<THREE.Group>;
-  update: (
+  _update: (
     faceGeometry: THREE.BufferGeometry,
     faceBlendshapes: FacemeshProps["faceBlendshapes"]
   ) => void;
@@ -332,10 +332,10 @@ export const FacemeshEye = React.forwardRef<FacemeshEyeApi, FacemeshEyeProps>(
     const [eyeCenter] = React.useState(() => new THREE.Vector3());
 
     //
-    // update()
+    // update
     //
 
-    const update = React.useCallback(
+    const _update = React.useCallback(
       (
         faceGeometry: THREE.BufferGeometry,
         faceBlendshapes: FacemeshProps["faceBlendshapes"]
@@ -417,9 +417,9 @@ export const FacemeshEye = React.forwardRef<FacemeshEyeApi, FacemeshEyeProps>(
       () => ({
         eyeMeshRef: eyeMeshRef,
         irisDirRef: irisDirRef,
-        update,
+        _update,
       }),
-      [update]
+      [_update]
     );
     React.useImperativeHandle(fref, () => api, [api]);
 
