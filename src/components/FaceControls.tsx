@@ -87,9 +87,20 @@ const VideoMaterial = ({
 
 type FaceControlsProps = {
   camera: THREE.Camera;
+  smoothTime: number;
+  //
+  offset: boolean;
+  offsetScalar: number;
 } & FacemeshProps;
 
-export const FaceControls = ({ camera, eyes = false, debug }: FaceControlsProps) => {
+export const FaceControls = ({
+  camera,
+  smoothTime = 0.25,
+  offset = true,
+  offsetScalar = 80,
+  eyes = false,
+  debug,
+}: FaceControlsProps) => {
   const defaultCamera = useThree((state) => state.camera);
   const explCamera = camera || defaultCamera;
 
@@ -148,10 +159,10 @@ export const FaceControls = ({ camera, eyes = false, debug }: FaceControlsProps)
 
       const eps = 0.000000001;
 
-      easing.damp3(posCurrent, posTarget, 0.25, delta, undefined, undefined, eps);
+      easing.damp3(posCurrent, posTarget, smoothTime, delta, undefined, undefined, eps);
       explCamera.position.copy(posCurrent);
 
-      easing.damp3(lookAtCurrent, lookAtTarget, 0.25, delta, undefined, undefined, eps);
+      easing.damp3(lookAtCurrent, lookAtTarget, smoothTime, delta, undefined, undefined, eps);
       explCamera.lookAt(lookAtCurrent);
     }
   });
@@ -175,8 +186,8 @@ export const FaceControls = ({ camera, eyes = false, debug }: FaceControlsProps)
               facialTransformationMatrix={facialTransformationMatrix}
               faceBlendshapes={faceBlendshapes}
               depth={0.13}
-              offset={true}
-              offsetScalar={80}
+              offset={offset}
+              offsetScalar={offsetScalar}
               // origin={168}
               eyes={eyes}
               debug={debug}

@@ -40,19 +40,19 @@ export default function App() {
 }
 
 function Scene() {
-  const userConfig = useControls({
+  const gui = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
-    // smoothTimePos: { value: 0.25, min: 0.000001, max: 2 },
+    smoothTime: { value: 0.25, min: 0.000001, max: 1 },
     // facialTransformationMatrix: true,
     // faceBlendshapes: true,
-    // offset: true,
-    // offsetScalar: { value: 80, min: 0, max: 200 },
+    offset: true,
+    offsetScalar: { value: 80, min: 0, max: 200 },
     // eyes: true,
     // debug: true,
   });
 
   const userCamRef = useRef();
-  useHelper(userConfig.camera !== "user" && userCamRef, THREE.CameraHelper);
+  useHelper(gui.camera !== "user" && userCamRef, THREE.CameraHelper);
 
   const [userCam, setUserCam] = useState();
 
@@ -62,13 +62,19 @@ function Scene() {
         <Suzi rotation={[-0.63, 0, 0]} scale={0.1} />
       </Center>
 
-      <FaceControls camera={userCam} debug={userConfig.camera !== "user"} />
+      <FaceControls
+        camera={userCam}
+        smoothTime={gui.smoothTime}
+        offset={gui.offset}
+        offsetScalar={gui.offsetScalar}
+        debug={gui.camera !== "user"}
+      />
       <PerspectiveCamera
         ref={(cam) => {
           userCamRef.current = cam;
           setUserCam(cam);
         }}
-        makeDefault={userConfig.camera === "user"}
+        makeDefault={gui.camera === "user"}
         position={[0, 0.2, 0]}
         fov={70}
         near={0.1}
