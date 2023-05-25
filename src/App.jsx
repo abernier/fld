@@ -47,8 +47,7 @@ function Scene() {
     // faceBlendshapes: true,
     offset: true,
     offsetScalar: { value: 80, min: 0, max: 200 },
-    // eyes: true,
-    // debug: true,
+    eyes: true,
   });
 
   const userCamRef = useRef();
@@ -67,6 +66,7 @@ function Scene() {
         smoothTime={gui.smoothTime}
         offset={gui.offset}
         offsetScalar={gui.offsetScalar}
+        eyes={gui.eyes}
         debug={gui.camera !== "user"}
       />
       <PerspectiveCamera
