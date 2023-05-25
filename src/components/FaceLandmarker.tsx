@@ -1,19 +1,7 @@
-import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
-import {
-  FilesetResolver,
-  FaceLandmarker as FaceLandmarkerImpl,
-  FaceLandmarkerOptions,
-} from "@mediapipe/tasks-vision";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { FilesetResolver, FaceLandmarker as FaceLandmarkerImpl, FaceLandmarkerOptions } from "@mediapipe/tasks-vision";
 
-const FaceLandmarkerContext = createContext(
-  {} as FaceLandmarkerImpl | undefined
-);
+const FaceLandmarkerContext = createContext({} as FaceLandmarkerImpl | undefined);
 
 type FaceLandmarkerProps = {
   basePath?: string;
@@ -48,18 +36,12 @@ export default function FaceLandmarker({
     FilesetResolver.forVisionTasks(basePath)
       .then((vision) => FaceLandmarkerImpl.createFromOptions(vision, options))
       .then((faceLandmarker) => setFaceLandmarker(faceLandmarker))
-      .catch((err) =>
-        console.error("error while creating faceLandmarker", err)
-      );
+      .catch((err) => console.error("error while creating faceLandmarker", err));
 
     return () => void ret?.close();
   }, [basePath, options]);
 
-  return (
-    <FaceLandmarkerContext.Provider value={faceLandmarker}>
-      {children}
-    </FaceLandmarkerContext.Provider>
-  );
+  return <FaceLandmarkerContext.Provider value={faceLandmarker}>{children}</FaceLandmarkerContext.Provider>;
 }
 
 export function useFaceLandmarker() {

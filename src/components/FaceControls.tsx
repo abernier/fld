@@ -1,25 +1,26 @@
 import * as THREE from "three";
-import { useState, Suspense, useEffect, useRef, useCallback } from "react";
+import { useState, Suspense, useEffect, useRef, useCallback, ReactNode } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useVideoTexture } from "@react-three/drei";
 import { easing } from "maath";
 
-import { Facemesh } from "./Facemesh";
+import { Facemesh, FacemeshApi, FacemeshProps } from "./Facemesh";
 import { useFaceLandmarker } from "./FaceLandmarker";
+import { FaceLandmarkerResult } from "@mediapipe/tasks-vision";
 
-const isFunction = (node) => typeof node === "function";
+const isFunction = (node: any) => typeof node === "function";
 
-function mean(v1, v2) {
+function mean(v1: THREE.Vector3, v2: THREE.Vector3) {
   return v1.add(v2).multiplyScalar(0.5);
 }
 
-const useVideoFrame = (video, f) => {
+const useVideoFrame = (video: HTMLVideoElement, f: (...args: any) => any) => {
   // https://web.dev/requestvideoframecallback-rvfc/
   // https://www.remotion.dev/docs/video-manipulation
   useEffect(() => {
     if (!video || !video.requestVideoFrameCallback) return;
-    let handle;
-    function callback(...args) {
+    let handle: number;
+    function callback(...args: any) {
       f(...args);
       handle = video.requestVideoFrameCallback(callback);
     }
@@ -29,17 +30,14 @@ const useVideoFrame = (video, f) => {
   }, [video, f]);
 };
 
-const Webcam = ({ children, ...props }) => {
-  const [stream, setStream] = useState();
+const Webcam = ({ children }: { children?: (faces: FaceLandmarkerResult | undefined) => ReactNode }) => {
+  const [stream, setStream] = useState<MediaStream>();
 
   useEffect(() => {
     navigator.mediaDevices
       .getUserMedia({
         audio: false,
-        video: {
-          facingMode: "user",
-          // width: 9999, // ask for max res
-        },
+        video: { facingMode: "user" },
       })
       .then((stream) => setStream(stream))
       .catch(console.error);
@@ -47,23 +45,28 @@ const Webcam = ({ children, ...props }) => {
 
   return (
     <Suspense fallback={null}>
-      <VideoMaterial src={stream}>{children}</VideoMaterial>
+      <VideoMaterial src={stream!}>{children}</VideoMaterial>
     </Suspense>
   );
 };
 
-const VideoMaterial = ({ src, children, ...props }) => {
-  const [faces, setFaces] = useState();
+const VideoMaterial = ({
+  src,
+  children,
+}: {
+  src: MediaStream;
+  children?: (faces: FaceLandmarkerResult | undefined) => ReactNode | ReactNode;
+}) => {
+  const [faces, setFaces] = useState<FaceLandmarkerResult>();
 
   const texture = useVideoTexture(src);
   const video = texture.source.data;
-  // console.log("video", video);
 
   const faceLandmarker = useFaceLandmarker();
 
   const onVideoFrame = useCallback(
-    (time) => {
-      const faces = faceLandmarker.detectForVideo(video, time);
+    (time: number) => {
+      const faces = faceLandmarker?.detectForVideo(video, time);
       setFaces(faces);
     },
     [faceLandmarker, video]
@@ -79,20 +82,25 @@ const VideoMaterial = ({ src, children, ...props }) => {
   // });
 
   const functional = isFunction(children);
-  return (
-    <>
-      {/* <meshStandardMaterial map={texture} toneMapped={false} /> */}
-
-      {functional ? children(faces, texture) : children}
-    </>
-  );
+  return <>{functional ? children?.(faces) : children}</>;
 };
 
-export const FaceControls = ({ camera, eyes = false, visible }) => {
+type FaceControlsProps = {
+  camera: THREE.Camera;
+} & FacemeshProps;
+
+export const FaceControls = ({ camera, eyes = false, debug }: FaceControlsProps) => {
   const defaultCamera = useThree((state) => state.camera);
   const explCamera = camera || defaultCamera;
 
-  const facemeshApiRef = useRef();
+  const facemeshApiRef = useRef<FacemeshApi>(null);
+
+  //
+  // Position and orient camera, according to <Facemesh>
+  //
+  //  1. either following the 2 eyes
+  //  2. or just the mesh
+  //
 
   const [posTarget] = useState(() => new THREE.Vector3());
   const [posCurrent] = useState(() => new THREE.Vector3());
@@ -109,25 +117,33 @@ export const FaceControls = ({ camera, eyes = false, visible }) => {
       const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
       if (eyeRightRef.current && eyeLeftRef.current) {
+        // 1.
+
         const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
         const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
 
-        //
-        // usercam pos: mean of irisRightDirPos,irisLeftDirPos
-        //
-        irisRightDirRef.current.getWorldPosition(irisRightDirPos);
-        irisLeftDirRef.current.getWorldPosition(irisLeftDirPos);
-        posTarget.copy(mean(irisRightDirPos, irisLeftDirPos));
+        if (irisRightDirRef.current && irisLeftDirRef.current) {
+          //
+          // pos: mean of irisRightDirPos,irisLeftDirPos
+          //
+          irisRightDirRef.current.getWorldPosition(irisRightDirPos);
+          irisLeftDirRef.current.getWorldPosition(irisLeftDirPos);
+          posTarget.copy(mean(irisRightDirPos, irisLeftDirPos));
 
-        //
-        // usercam lookAt: mean of irisRightLookAt,irisLeftLookAt
-        //
-        irisRightLookAt.copy(irisRightDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
-        irisLeftLookAt.copy(irisLeftDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
-        lookAtTarget.copy(mean(irisRightLookAt, irisLeftLookAt));
+          //
+          // lookAt: mean of irisRightLookAt,irisLeftLookAt
+          //
+          irisRightLookAt.copy(irisRightDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
+          irisLeftLookAt.copy(irisLeftDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
+          lookAtTarget.copy(mean(irisRightLookAt, irisLeftLookAt));
+        }
       } else {
-        meshRef.current.getWorldPosition(posTarget);
-        lookAtTarget.copy(meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
+        // 2.
+
+        if (meshRef.current) {
+          meshRef.current.getWorldPosition(posTarget);
+          lookAtTarget.copy(meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
+        }
       }
 
       const eps = 0.000000001;
@@ -143,10 +159,12 @@ export const FaceControls = ({ camera, eyes = false, visible }) => {
   return (
     <>
       <Webcam>
-        {(faces, texture) => {
+        {(faces) => {
           if (!faces) return;
 
           const points = faces?.faceLandmarks[0];
+          const facialTransformationMatrix = faces.facialTransformationMatrixes?.[0];
+          const faceBlendshapes = faces.faceBlendshapes?.[0];
 
           return (
             <Facemesh
@@ -154,16 +172,16 @@ export const FaceControls = ({ camera, eyes = false, visible }) => {
               // lookAt={explCamera.lookAt}
               ref={facemeshApiRef}
               points={points}
-              facialTransformationMatrix={faces.facialTransformationMatrixes[0]}
-              faceBlendshapes={faces.faceBlendshapes[0]}
+              facialTransformationMatrix={facialTransformationMatrix}
+              faceBlendshapes={faceBlendshapes}
               depth={0.13}
               offset={true}
               offsetScalar={80}
               // origin={168}
               eyes={eyes}
-              debug={true}
+              debug={debug}
               rotation-z={Math.PI}
-              visible={visible}
+              visible={debug}
             >
               <meshStandardMaterial />
             </Facemesh>

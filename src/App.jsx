@@ -42,7 +42,6 @@ export default function App() {
 function Scene() {
   const userConfig = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
-    cameraHelper: true,
     // smoothTimePos: { value: 0.25, min: 0.000001, max: 2 },
     // facialTransformationMatrix: true,
     // faceBlendshapes: true,
@@ -53,10 +52,7 @@ function Scene() {
   });
 
   const userCamRef = useRef();
-  useHelper(
-    userConfig.cameraHelper && userConfig.camera !== "user" && userCamRef,
-    THREE.CameraHelper
-  );
+  useHelper(userConfig.camera !== "user" && userCamRef, THREE.CameraHelper);
 
   const [userCam, setUserCam] = useState();
 
@@ -66,7 +62,7 @@ function Scene() {
         <Suzi rotation={[-0.63, 0, 0]} scale={0.1} />
       </Center>
 
-      <FaceControls camera={userCam} visible={userConfig.camera !== "user"} />
+      <FaceControls camera={userCam} debug={userConfig.camera !== "user"} />
       <PerspectiveCamera
         ref={(cam) => {
           userCamRef.current = cam;
@@ -120,14 +116,7 @@ const Suzi = (props, ref) => {
 };
 
 const Shadows = memo(() => (
-  <AccumulativeShadows
-    temporal
-    frames={100}
-    color="#9d4b4b"
-    colorBlend={0.5}
-    alphaTest={0.9}
-    scale={20}
-  >
+  <AccumulativeShadows temporal frames={100} color="#9d4b4b" colorBlend={0.5} alphaTest={0.9} scale={20}>
     <RandomizedLight amount={8} radius={4} position={[5, 5, -10]} />
   </AccumulativeShadows>
 ));
