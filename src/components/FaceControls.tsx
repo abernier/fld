@@ -9,6 +9,7 @@ import {
   forwardRef,
   useMemo,
   useImperativeHandle,
+  RefObject,
 } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useVideoTexture } from "@react-three/drei";
@@ -112,16 +113,20 @@ const VideoMaterial = ({
 
 type FaceControlsProps = {
   camera: THREE.Camera;
+  manual: boolean;
   smoothTime: number;
   //
   offset: boolean;
   offsetScalar: number;
 } & FacemeshProps;
 
-type FaceControlsApi = {};
+type FaceControlsApi = {
+  update: (delta: number) => void;
+  facemeshApiRef: RefObject<FacemeshApi>;
+};
 
 export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
-  ({ camera, smoothTime = 0.25, offset = true, offsetScalar = 80, eyes = false, debug }, fref) => {
+  ({ camera, manual = false, smoothTime = 0.25, offset = true, offsetScalar = 80, eyes = false, debug }, fref) => {
     const scene = useThree((state) => state.scene);
     const defaultCamera = useThree((state) => state.camera);
     const explCamera = camera || defaultCamera;
@@ -143,68 +148,90 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
     const [irisLeftDirPos] = useState(() => new THREE.Vector3());
     const [irisRightLookAt] = useState(() => new THREE.Vector3());
     const [irisLeftLookAt] = useState(() => new THREE.Vector3());
-    useFrame((_, delta) => {
-      const facemeshApi = facemeshApiRef.current;
+    const update = useCallback(
+      function (delta: number) {
+        const facemeshApi = facemeshApiRef.current;
 
-      if (explCamera && facemeshApi) {
-        const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
+        if (explCamera && facemeshApi) {
+          const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
-        //
-        // Compute posTarget and lookAtTarget
-        //
+          //
+          // Compute posTarget and lookAtTarget
+          //
 
-        if (eyeRightRef.current && eyeLeftRef.current) {
-          // 1. 👀
+          if (eyeRightRef.current && eyeLeftRef.current) {
+            // 1. 👀
 
-          const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
-          const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
+            const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
+            const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
 
-          if (irisRightDirRef.current && irisLeftDirRef.current && meshRef.current) {
-            //
-            // posTarget: mean of irisRightDirPos,irisLeftDirPos
-            //
-            irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
-            irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
-            posTarget.copy(
-              localToLocal(meshRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
-            );
+            if (irisRightDirRef.current && irisLeftDirRef.current && meshRef.current) {
+              //
+              // posTarget: mean of irisRightDirPos,irisLeftDirPos
+              //
+              irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
+              irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
+              posTarget.copy(
+                localToLocal(meshRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
+              );
 
-            //
-            // lookAt: mean of irisRightLookAt,irisLeftLookAt
-            //
-            irisRightLookAt.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
-            irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
-            lookAtTarget.copy(meshRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
+              //
+              // lookAt: mean of irisRightLookAt,irisLeftLookAt
+              //
+              irisRightLookAt.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
+              irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
+              lookAtTarget.copy(meshRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
+            }
+          } else {
+            // 2. 👤
+
+            if (meshRef.current) {
+              posTarget.copy(localToLocal(meshRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene));
+              lookAtTarget.copy(meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
+            }
           }
-        } else {
-          // 2. 👤
 
-          if (meshRef.current) {
-            posTarget.copy(localToLocal(meshRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene));
-            lookAtTarget.copy(meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
-          }
+          //
+          // Damp posTarget and lookAtTarget
+          //
+
+          const eps = 0.000000001;
+
+          easing.damp3(posCurrent, posTarget, smoothTime, delta, undefined, undefined, eps);
+          explCamera.position.copy(posCurrent);
+
+          easing.damp3(lookAtCurrent, lookAtTarget, smoothTime, delta, undefined, undefined, eps);
+          explCamera.lookAt(lookAtCurrent);
         }
+      },
+      [
+        explCamera,
+        irisLeftDirPos,
+        irisLeftLookAt,
+        irisRightDirPos,
+        irisRightLookAt,
+        lookAtCurrent,
+        lookAtTarget,
+        posCurrent,
+        posTarget,
+        scene,
+        smoothTime,
+      ]
+    );
 
-        //
-        // Damp posTarget and lookAtTarget
-        //
-
-        const eps = 0.000000001;
-
-        easing.damp3(posCurrent, posTarget, smoothTime, delta, undefined, undefined, eps);
-        explCamera.position.copy(posCurrent);
-
-        easing.damp3(lookAtCurrent, lookAtTarget, smoothTime, delta, undefined, undefined, eps);
-        explCamera.lookAt(lookAtCurrent);
+    useFrame((_, delta) => {
+      if (!manual) {
+        update(delta);
       }
     });
 
     // Ref API
     const api = useMemo<FaceControlsApi>(
       () => ({
-        // TODO
+        facemeshApiRef,
+        update,
       }),
-      []
+      [update]
     );
     useImperativeHandle(fref, () => api, [api]);
 
