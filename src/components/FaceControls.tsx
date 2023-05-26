@@ -233,7 +233,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
                 rotation-z={Math.PI}
                 visible={debug}
               >
-                <meshStandardMaterial />
+                <meshStandardMaterial flatShading={true} side={THREE.DoubleSide} />
               </Facemesh>
             );
           }}

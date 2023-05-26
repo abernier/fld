@@ -81,7 +81,7 @@ function Scene() {
           }}
           makeDefault={gui.camera === "user"}
           fov={70}
-          near={0.001}
+          near={0.1}
           far={2}
         />
       </group>
