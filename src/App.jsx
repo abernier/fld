@@ -41,13 +41,17 @@ export default function App() {
 
 function Scene() {
   const gui = useControls({
-    camera: { value: "cc", options: ["user", "cc"] },
-    smoothTime: { value: 0.25, min: 0.000001, max: 1 },
+    camera: { value: "user", options: ["user", "cc"] },
+    smoothTime: { value: 0.45, min: 0.000001, max: 1 },
     // facialTransformationMatrix: true,
     // faceBlendshapes: true,
     offset: true,
-    offsetScalar: { value: 80, min: 0, max: 200 },
+    offsetScalar: { value: 200, min: 0, max: 500 },
     eyes: false,
+    player: folder({
+      rotation: [0, 0, 0],
+      position: [0, 0.125, 0.2],
+    }),
   });
 
   const userCamRef = useRef();
@@ -61,25 +65,26 @@ function Scene() {
         <Suzi rotation={[-0.63, 0, 0]} scale={0.1} />
       </Center>
 
-      <FaceControls
-        camera={userCam}
-        smoothTime={gui.smoothTime}
-        offset={gui.offset}
-        offsetScalar={gui.offsetScalar}
-        eyes={gui.eyes}
-        debug={gui.camera !== "user"}
-      />
-      <PerspectiveCamera
-        ref={(cam) => {
-          userCamRef.current = cam;
-          setUserCam(cam);
-        }}
-        makeDefault={gui.camera === "user"}
-        position={[0, 0.2, 0]}
-        fov={70}
-        near={0.1}
-        far={2}
-      />
+      <group rotation={gui.rotation} position={gui.position}>
+        <FaceControls
+          camera={userCam}
+          smoothTime={gui.smoothTime}
+          offset={gui.offset}
+          offsetScalar={gui.offsetScalar}
+          eyes={gui.eyes}
+          debug={gui.camera !== "user"}
+        />
+        <PerspectiveCamera
+          ref={(cam) => {
+            userCamRef.current = cam;
+            setUserCam(cam);
+          }}
+          makeDefault={gui.camera === "user"}
+          fov={70}
+          near={0.001}
+          far={2}
+        />
+      </group>
 
       {/* <axesHelper /> */}
       <Ground />

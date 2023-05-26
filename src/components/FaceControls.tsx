@@ -11,7 +11,22 @@ import { FaceLandmarkerResult } from "@mediapipe/tasks-vision";
 const isFunction = (node: any) => typeof node === "function";
 
 function mean(v1: THREE.Vector3, v2: THREE.Vector3) {
-  return v1.add(v2).multiplyScalar(0.5);
+  return v1.clone().add(v2).multiplyScalar(0.5);
+}
+
+// declare module "three" {
+//   export interface Object3D {
+//     localToLocal: (v: THREE.Vector3, obj: THREE.Object3D) => THREE.Vector3;
+//   }
+// }
+// THREE.Object3D.prototype.localToLocal = function (v: THREE.Vector3, obj: THREE.Object3D) {
+//   const v_world = this.localToWorld(v);
+//   return obj.worldToLocal(v_world);
+// };
+function localToLocal(objSrc: THREE.Object3D, v: THREE.Vector3, objDst: THREE.Object3D) {
+  // see: https://discourse.threejs.org/t/object3d-localtolocal/51564
+  const v_world = objSrc.localToWorld(v);
+  return objDst.worldToLocal(v_world);
 }
 
 const useVideoFrame = (video: HTMLVideoElement, f: (...args: any) => any) => {
@@ -101,6 +116,7 @@ export const FaceControls = ({
   eyes = false,
   debug,
 }: FaceControlsProps) => {
+  const scene = useThree((state) => state.scene);
   const defaultCamera = useThree((state) => state.camera);
   const explCamera = camera || defaultCamera;
 
@@ -109,8 +125,8 @@ export const FaceControls = ({
   //
   // Position and orient camera, according to <Facemesh>
   //
-  //  1. either following the 2 eyes
-  //  2. or just the mesh
+  //  1. 👀 either following the 2 eyes
+  //  2. 👤 or just the head mesh
   //
 
   const [posTarget] = useState(() => new THREE.Vector3());
@@ -127,35 +143,45 @@ export const FaceControls = ({
     if (explCamera && facemeshApi) {
       const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
+      //
+      // Compute posTarget and lookAtTarget
+      //
+
       if (eyeRightRef.current && eyeLeftRef.current) {
-        // 1.
+        // 1. 👀
 
         const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
         const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
 
-        if (irisRightDirRef.current && irisLeftDirRef.current) {
+        if (irisRightDirRef.current && irisLeftDirRef.current && meshRef.current) {
           //
           // pos: mean of irisRightDirPos,irisLeftDirPos
           //
-          irisRightDirRef.current.getWorldPosition(irisRightDirPos);
-          irisLeftDirRef.current.getWorldPosition(irisLeftDirPos);
-          posTarget.copy(mean(irisRightDirPos, irisLeftDirPos));
+          irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
+          irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
+          posTarget.copy(
+            localToLocal(meshRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
+          );
 
           //
           // lookAt: mean of irisRightLookAt,irisLeftLookAt
           //
-          irisRightLookAt.copy(irisRightDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
-          irisLeftLookAt.copy(irisLeftDirRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
-          lookAtTarget.copy(mean(irisRightLookAt, irisLeftLookAt));
+          irisRightLookAt.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
+          irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
+          lookAtTarget.copy(meshRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
         }
       } else {
-        // 2.
+        // 2. 👤
 
         if (meshRef.current) {
-          meshRef.current.getWorldPosition(posTarget);
+          posTarget.copy(localToLocal(meshRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene));
           lookAtTarget.copy(meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
         }
       }
+
+      //
+      // Damp posTarget and lookAtTarget
+      //
 
       const eps = 0.000000001;
 
@@ -179,8 +205,6 @@ export const FaceControls = ({
 
           return (
             <Facemesh
-              position={explCamera.position}
-              // lookAt={explCamera.lookAt}
               ref={facemeshApiRef}
               points={points}
               facialTransformationMatrix={facialTransformationMatrix}
