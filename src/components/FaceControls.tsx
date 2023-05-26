@@ -1,5 +1,15 @@
 import * as THREE from "three";
-import { useState, Suspense, useEffect, useRef, useCallback, ReactNode } from "react";
+import {
+  useState,
+  Suspense,
+  useEffect,
+  useRef,
+  useCallback,
+  ReactNode,
+  forwardRef,
+  useMemo,
+  useImperativeHandle,
+} from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useVideoTexture } from "@react-three/drei";
 import { easing } from "maath";
@@ -108,121 +118,127 @@ type FaceControlsProps = {
   offsetScalar: number;
 } & FacemeshProps;
 
-export const FaceControls = ({
-  camera,
-  smoothTime = 0.25,
-  offset = true,
-  offsetScalar = 80,
-  eyes = false,
-  debug,
-}: FaceControlsProps) => {
-  const scene = useThree((state) => state.scene);
-  const defaultCamera = useThree((state) => state.camera);
-  const explCamera = camera || defaultCamera;
+type FaceControlsApi = {};
 
-  const facemeshApiRef = useRef<FacemeshApi>(null);
+export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
+  ({ camera, smoothTime = 0.25, offset = true, offsetScalar = 80, eyes = false, debug }, fref) => {
+    const scene = useThree((state) => state.scene);
+    const defaultCamera = useThree((state) => state.camera);
+    const explCamera = camera || defaultCamera;
 
-  //
-  // Position and orient camera, according to <Facemesh>
-  //
-  //  1. 👀 either following the 2 eyes
-  //  2. 👤 or just the head mesh
-  //
+    const facemeshApiRef = useRef<FacemeshApi>(null);
 
-  const [posTarget] = useState(() => new THREE.Vector3());
-  const [posCurrent] = useState(() => new THREE.Vector3());
-  const [lookAtTarget] = useState(() => new THREE.Vector3());
-  const [lookAtCurrent] = useState(() => new THREE.Vector3());
-  const [irisRightDirPos] = useState(() => new THREE.Vector3());
-  const [irisLeftDirPos] = useState(() => new THREE.Vector3());
-  const [irisRightLookAt] = useState(() => new THREE.Vector3());
-  const [irisLeftLookAt] = useState(() => new THREE.Vector3());
-  useFrame((_, delta) => {
-    const facemeshApi = facemeshApiRef.current;
+    //
+    // Position and orient camera, according to <Facemesh>
+    //
+    //  1. 👀 either following the 2 eyes
+    //  2. 👤 or just the head mesh
+    //
 
-    if (explCamera && facemeshApi) {
-      const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
+    const [posTarget] = useState(() => new THREE.Vector3());
+    const [posCurrent] = useState(() => new THREE.Vector3());
+    const [lookAtTarget] = useState(() => new THREE.Vector3());
+    const [lookAtCurrent] = useState(() => new THREE.Vector3());
+    const [irisRightDirPos] = useState(() => new THREE.Vector3());
+    const [irisLeftDirPos] = useState(() => new THREE.Vector3());
+    const [irisRightLookAt] = useState(() => new THREE.Vector3());
+    const [irisLeftLookAt] = useState(() => new THREE.Vector3());
+    useFrame((_, delta) => {
+      const facemeshApi = facemeshApiRef.current;
 
-      //
-      // Compute posTarget and lookAtTarget
-      //
+      if (explCamera && facemeshApi) {
+        const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
-      if (eyeRightRef.current && eyeLeftRef.current) {
-        // 1. 👀
+        //
+        // Compute posTarget and lookAtTarget
+        //
 
-        const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
-        const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
+        if (eyeRightRef.current && eyeLeftRef.current) {
+          // 1. 👀
 
-        if (irisRightDirRef.current && irisLeftDirRef.current && meshRef.current) {
-          //
-          // pos: mean of irisRightDirPos,irisLeftDirPos
-          //
-          irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
-          irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
-          posTarget.copy(
-            localToLocal(meshRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
-          );
+          const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
+          const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
 
-          //
-          // lookAt: mean of irisRightLookAt,irisLeftLookAt
-          //
-          irisRightLookAt.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
-          irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
-          lookAtTarget.copy(meshRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
+          if (irisRightDirRef.current && irisLeftDirRef.current && meshRef.current) {
+            //
+            // posTarget: mean of irisRightDirPos,irisLeftDirPos
+            //
+            irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
+            irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
+            posTarget.copy(
+              localToLocal(meshRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
+            );
+
+            //
+            // lookAt: mean of irisRightLookAt,irisLeftLookAt
+            //
+            irisRightLookAt.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
+            irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
+            lookAtTarget.copy(meshRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
+          }
+        } else {
+          // 2. 👤
+
+          if (meshRef.current) {
+            posTarget.copy(localToLocal(meshRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene));
+            lookAtTarget.copy(meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
+          }
         }
-      } else {
-        // 2. 👤
 
-        if (meshRef.current) {
-          posTarget.copy(localToLocal(meshRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene));
-          lookAtTarget.copy(meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
-        }
+        //
+        // Damp posTarget and lookAtTarget
+        //
+
+        const eps = 0.000000001;
+
+        easing.damp3(posCurrent, posTarget, smoothTime, delta, undefined, undefined, eps);
+        explCamera.position.copy(posCurrent);
+
+        easing.damp3(lookAtCurrent, lookAtTarget, smoothTime, delta, undefined, undefined, eps);
+        explCamera.lookAt(lookAtCurrent);
       }
+    });
 
-      //
-      // Damp posTarget and lookAtTarget
-      //
+    // Ref API
+    const api = useMemo<FaceControlsApi>(
+      () => ({
+        // TODO
+      }),
+      []
+    );
+    useImperativeHandle(fref, () => api, [api]);
 
-      const eps = 0.000000001;
+    return (
+      <>
+        <Webcam>
+          {(faces) => {
+            if (!faces) return;
 
-      easing.damp3(posCurrent, posTarget, smoothTime, delta, undefined, undefined, eps);
-      explCamera.position.copy(posCurrent);
+            const points = faces?.faceLandmarks[0];
+            const facialTransformationMatrix = faces.facialTransformationMatrixes?.[0];
+            const faceBlendshapes = faces.faceBlendshapes?.[0];
 
-      easing.damp3(lookAtCurrent, lookAtTarget, smoothTime, delta, undefined, undefined, eps);
-      explCamera.lookAt(lookAtCurrent);
-    }
-  });
-
-  return (
-    <>
-      <Webcam>
-        {(faces) => {
-          if (!faces) return;
-
-          const points = faces?.faceLandmarks[0];
-          const facialTransformationMatrix = faces.facialTransformationMatrixes?.[0];
-          const faceBlendshapes = faces.faceBlendshapes?.[0];
-
-          return (
-            <Facemesh
-              ref={facemeshApiRef}
-              points={points}
-              facialTransformationMatrix={facialTransformationMatrix}
-              faceBlendshapes={faceBlendshapes}
-              depth={0.13}
-              offset={offset}
-              offsetScalar={offsetScalar}
-              // origin={168}
-              eyes={eyes}
-              debug={debug}
-              rotation-z={Math.PI}
-              visible={debug}
-            >
-              <meshStandardMaterial />
-            </Facemesh>
-          );
-        }}
-      </Webcam>
-    </>
-  );
-};
+            return (
+              <Facemesh
+                ref={facemeshApiRef}
+                points={points}
+                facialTransformationMatrix={facialTransformationMatrix}
+                faceBlendshapes={faceBlendshapes}
+                depth={0.13}
+                offset={offset}
+                offsetScalar={offsetScalar}
+                // origin={168}
+                eyes={eyes}
+                debug={debug}
+                rotation-z={Math.PI}
+                visible={debug}
+              >
+                <meshStandardMaterial />
+              </Facemesh>
+            );
+          }}
+        </Webcam>
+      </>
+    );
+  }
+);
