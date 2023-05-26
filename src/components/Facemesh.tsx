@@ -146,6 +146,8 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
           transform.position.y *= -1;
           transform.position.z *= -1;
           offsetRef.current?.position.copy(transform.position.divideScalar(offsetScalar));
+        } else {
+          offsetRef.current?.position.set(0, 0, 0); // reset
         }
       } else {
         // normal to verticalTri
