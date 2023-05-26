@@ -13,11 +13,11 @@ import {
 } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useVideoTexture } from "@react-three/drei";
+import { FaceLandmarkerResult } from "@mediapipe/tasks-vision";
 import { easing } from "maath";
 
 import { Facemesh, FacemeshApi, FacemeshProps } from "./Facemesh";
 import { useFaceLandmarker } from "./FaceLandmarker";
-import { FaceLandmarkerResult } from "@mediapipe/tasks-vision";
 
 const isFunction = (node: any) => typeof node === "function";
 
@@ -25,15 +25,6 @@ function mean(v1: THREE.Vector3, v2: THREE.Vector3) {
   return v1.clone().add(v2).multiplyScalar(0.5);
 }
 
-// declare module "three" {
-//   export interface Object3D {
-//     localToLocal: (v: THREE.Vector3, obj: THREE.Object3D) => THREE.Vector3;
-//   }
-// }
-// THREE.Object3D.prototype.localToLocal = function (v: THREE.Vector3, obj: THREE.Object3D) {
-//   const v_world = this.localToWorld(v);
-//   return obj.worldToLocal(v_world);
-// };
 function localToLocal(objSrc: THREE.Object3D, v: THREE.Vector3, objDst: THREE.Object3D) {
   // see: https://discourse.threejs.org/t/object3d-localtolocal/51564
   const v_world = objSrc.localToWorld(v);
@@ -111,12 +102,20 @@ const VideoMaterial = ({
   return <>{functional ? children?.(faces) : children}</>;
 };
 
+//
+//
+//
+
 type FaceControlsProps = {
+  /**  */
   camera: THREE.Camera;
+  /**  */
   manual: boolean;
+  /**  */
   smoothTime: number;
-  //
+  /**  */
   offset: boolean;
+  /**  */
   offsetScalar: number;
 } & FacemeshProps;
 
