@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import {
   Grid,
   AccumulativeShadows,
@@ -59,6 +59,13 @@ function Scene() {
 
   const [userCam, setUserCam] = useState();
 
+  const faceControlsApiRef = useRef();
+  useFrame((_, delta) => {
+    if (faceControlsApiRef.current) {
+      faceControlsApiRef.current.update(delta);
+    }
+  });
+
   return (
     <>
       <Center top>
@@ -68,6 +75,8 @@ function Scene() {
       <group rotation={gui.rotation} position={gui.position}>
         <FaceControls
           camera={userCam}
+          ref={faceControlsApiRef}
+          manual
           smoothTime={gui.smoothTime}
           offset={gui.offset}
           offsetScalar={gui.offsetScalar}
