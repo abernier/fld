@@ -190,16 +190,17 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
             }
           }
 
-          //
-          // Damp posTarget and lookAtTarget
-          //
+          // damping
+          if (smoothTime > 0) {
+            const eps = 0.000000001;
+            easing.damp3(posCurrent, posTarget, smoothTime, delta, undefined, undefined, eps);
+            easing.damp3(lookAtCurrent, lookAtTarget, smoothTime, delta, undefined, undefined, eps);
+          } else {
+            posCurrent.copy(posTarget);
+            lookAtCurrent.copy(lookAtTarget);
+          }
 
-          const eps = 0.000000001;
-
-          easing.damp3(posCurrent, posTarget, smoothTime, delta, undefined, undefined, eps);
           explCamera.position.copy(posCurrent);
-
-          easing.damp3(lookAtCurrent, lookAtTarget, smoothTime, delta, undefined, undefined, eps);
           explCamera.lookAt(lookAtCurrent);
         }
       },
@@ -240,7 +241,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
           {(faces) => {
             if (!faces) return;
 
-            const points = faces?.faceLandmarks[0];
+            const points = faces.faceLandmarks[0];
             const facialTransformationMatrix = faces.facialTransformationMatrixes?.[0];
             const faceBlendshapes = faces.faceBlendshapes?.[0];
 
