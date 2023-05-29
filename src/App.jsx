@@ -41,13 +41,15 @@ export default function App() {
 
 function Scene() {
   const gui = useControls({
-    camera: { value: "user", options: ["user", "cc"] },
+    camera: { value: "cc", options: ["user", "cc"] },
     smoothTime: { value: 0.45, min: 0.000001, max: 1 },
     // facialTransformationMatrix: true,
     // faceBlendshapes: true,
-    offset: true,
+    offset: false,
     offsetScalar: { value: 200, min: 0, max: 500 },
     eyes: false,
+    origin: { value: 0, optional: true, disabled: true, min: 0, max: 477, step: 1 },
+    depth: { value: 0.15, min: 0, max: 1 },
     player: folder({
       rotation: [0, 0, 0],
       position: [0, 0.125, 0.2],
@@ -81,6 +83,7 @@ function Scene() {
           offset={gui.offset}
           offsetScalar={gui.offsetScalar}
           eyes={gui.eyes}
+          facemesh={{ depth: gui.depth, origin: gui.origin }}
           debug={gui.camera !== "user"}
         />
         <PerspectiveCamera

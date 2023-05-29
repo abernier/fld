@@ -38,7 +38,7 @@ export type FacemeshProps = {
   faceBlendshapes?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceBlendshapes)[0];
   /** debug mode, default: false */
   debug?: boolean;
-} & JSX.IntrinsicElements["group"];
+} & Omit<JSX.IntrinsicElements["group"], "ref">;
 
 export type FacemeshApi = {
   meshRef: React.RefObject<THREE.Mesh>;
@@ -177,23 +177,24 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       outerRef.current?.setRotationFromQuaternion(sightDirQuaternion);
 
       // 3. origin: substract the geometry to that landmark coords (once 1.)
-      if (origin) {
+      if (origin !== undefined) {
         const position = faceGeometry.getAttribute("position") as THREE.BufferAttribute;
         faceGeometry.translate(-position.getX(origin), -position.getY(origin), -position.getZ(origin));
       }
 
       // 4. re-scale
-      faceGeometry.boundingBox!.getSize(bboxSize);
-      let scale = 1;
-      if (width) scale = width / bboxSize.x; // fit in width
-      if (height) scale = height / bboxSize.y; // fit in height
-      if (depth) scale = depth / bboxSize.z; // fit in depth
-      if (scale !== 1) faceGeometry.scale(scale, scale, scale);
+      if (width || height || depth) {
+        let scale = 1;
+        faceGeometry.boundingBox!.getSize(bboxSize);
+        if (width) scale = width / bboxSize.x; // fit in width
+        if (height) scale = height / bboxSize.y; // fit in height
+        if (depth) scale = depth / bboxSize.z; // fit in depth
+        faceGeometry.scale(scale, scale, scale);
+      }
 
       //
       // 5. 👀 eyes
       //
-
       if (points.length > 468 && eyes) {
         eyeRightRef.current?._update(faceGeometry, faceBlendshapes);
         eyeLeftRef.current?._update(faceGeometry, faceBlendshapes);
@@ -255,6 +256,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
                   {meshRef.current?.geometry?.boundingBox && (
                     <box3Helper args={[meshRef.current?.geometry.boundingBox]} />
                   )}
+                  <axesHelper args={[0.1]} />
                   <Line
                     points={[
                       [0, 0, 0],

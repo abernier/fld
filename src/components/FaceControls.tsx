@@ -110,14 +110,20 @@ type FaceControlsProps = {
   /**  */
   camera: THREE.Camera;
   /**  */
-  manual: boolean;
+  manual?: boolean;
   /**  */
-  smoothTime: number;
+  smoothTime?: number;
   /**  */
-  offset: boolean;
+  offset?: boolean;
   /**  */
-  offsetScalar: number;
-} & FacemeshProps;
+  offsetScalar?: number;
+  /** */
+  eyes?: boolean;
+  /** */
+  debug?: boolean;
+  /** */
+  facemesh?: FacemeshProps;
+};
 
 type FaceControlsApi = {
   update: (delta: number) => void;
@@ -125,7 +131,19 @@ type FaceControlsApi = {
 };
 
 export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
-  ({ camera, manual = false, smoothTime = 0.25, offset = true, offsetScalar = 80, eyes = false, debug }, fref) => {
+  (
+    {
+      camera,
+      manual = false,
+      smoothTime = 0.25,
+      offset = true,
+      offsetScalar = 80,
+      eyes = false,
+      debug = false,
+      facemesh,
+    },
+    fref
+  ) => {
     const scene = useThree((state) => state.scene);
     const defaultCamera = useThree((state) => state.camera);
     const explCamera = camera || defaultCamera;
@@ -248,15 +266,16 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
             return (
               <Facemesh
                 ref={facemeshApiRef}
+                {...facemesh}
                 points={points}
                 facialTransformationMatrix={facialTransformationMatrix}
                 faceBlendshapes={faceBlendshapes}
-                depth={0.13}
+                eyes={eyes}
                 offset={offset}
                 offsetScalar={offsetScalar}
-                // origin={168}
-                eyes={eyes}
                 debug={debug}
+                // depth={0.13}
+                // origin={168}
                 rotation-z={Math.PI}
                 visible={debug}
               >
