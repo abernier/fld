@@ -12,9 +12,9 @@ export type MediaPipePoints =
   | (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceLandmarks)[0];
 
 export type FacemeshProps = {
-  /** an array of 468+ keypoints as returned by mediapipe tasks-vision, default: a lambda face */
+  /** an array of 468+ keypoints as returned by google/mediapipe tasks-vision, default: a sample face */
   points?: MediaPipePoints;
-  /** @deprecated an face object as returned by face-landmarks-detection */
+  /** @deprecated an face object as returned by tensorflow/tfjs-models face-landmarks-detection */
   face?: MediaPipeFaceMesh;
   /** constant width of the mesh, default: 1 */
   width?: number;
@@ -26,13 +26,13 @@ export type FacemeshProps = {
   verticalTri?: [number, number, number];
   /** a landmark index (to get the position from) or a vec3 to be the origin of the mesh. default: undefined (ie. the bbox center) */
   origin?: number | THREE.Vector3;
-  /**  */
+  /** A facial transformation matrix, as returned by FaceLandmarkerResult.facialTransformationMatrixes (see: https://developers.google.com/mediapipe/solutions/vision/face_landmarker/web_js#handle_and_display_results) */
   facialTransformationMatrix?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.facialTransformationMatrixes)[0];
-  /**  */
+  /** Apply position offset extracted from `facialTransformationMatrix` */
   offset?: boolean;
-  /**  */
+  /** Offset sensitivity factor, less is more sensible */
   offsetScalar?: number;
-  /**  */
+  /** Fface blendshapes, as returned by FaceLandmarkerResult.faceBlendshapes (see: https://developers.google.com/mediapipe/solutions/vision/face_landmarker/web_js#handle_and_display_results) */
   faceBlendshapes?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceBlendshapes)[0];
   /** whether to enable eyes (nb. `faceBlendshapes` is required for), default: false */
   eyes?: boolean;
