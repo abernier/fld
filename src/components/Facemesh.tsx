@@ -344,6 +344,10 @@ const FACEMESH_EYE_CONFIG = {
     right: "red",
     left: "#00ff00",
   },
+  fov: {
+    horizontal: 100,
+    vertical: 90,
+  },
 };
 
 export const FacemeshEye = React.forwardRef<FacemeshEyeApi, FacemeshEyeProps>(({ side, debug = true }, fref) => {
@@ -413,8 +417,10 @@ export const FacemeshEye = React.forwardRef<FacemeshEyeApi, FacemeshEyeProps>(({
         const lookUp = faceBlendshapes.categories[blendshapes[2]].score;
         const lookDown = faceBlendshapes.categories[blendshapes[3]].score;
 
-        const rx = 100 * DEG2RAD * 0.5 * (lookDown - lookUp);
-        const ry = 90 * DEG2RAD * 0.5 * (lookIn - lookOut) * (side === "left" ? 1 : -1);
+        const hfov = FACEMESH_EYE_CONFIG.fov.horizontal * DEG2RAD;
+        const vfov = FACEMESH_EYE_CONFIG.fov.vertical * DEG2RAD;
+        const rx = hfov * 0.5 * (lookDown - lookUp);
+        const ry = vfov * 0.5 * (lookIn - lookOut) * (side === "left" ? 1 : -1);
         const rotation = new THREE.Euler(rx, ry, 0);
 
         irisDirRef.current?.setRotationFromEuler(rotation);
