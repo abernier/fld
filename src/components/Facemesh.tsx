@@ -16,11 +16,11 @@ export type FacemeshProps = {
   points?: MediaPipePoints;
   /** @deprecated an face object as returned by face-landmarks-detection */
   face?: MediaPipeFaceMesh;
-  /** width of the mesh, default: undefined */
+  /** constant width of the facemesh, default: undefined */
   width?: number;
-  /** or height of the mesh, default: undefined */
+  /** or constant height of the facemesh, default: undefined */
   height?: number;
-  /** or depth of the mesh, default: undefined */
+  /** or constant depth of the facemesh, default: undefined */
   depth?: number;
   /** a landmarks tri supposed to be vertical, default: [159, 386, 200] (see: https://github.com/tensorflow/tfjs-models/tree/master/face-landmarks-detection#mediapipe-facemesh-keypoints) */
   verticalTri?: [number, number, number];
@@ -30,13 +30,13 @@ export type FacemeshProps = {
   facialTransformationMatrix?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.facialTransformationMatrixes)[0];
   /**  */
   offset?: boolean;
-  /** */
+  /**  */
   offsetScalar?: number;
-  /** whether to enable eyes (if >468 points), default: true */
+  /** whether to enable eyes (nb. `faceBlendshapes` is required for), default: false */
   eyes?: boolean;
-  /** */
+  /** Force `origin` to be the middle of the 2 eyes (nb. `eyes` is required for), default: false */
   eyesAsOrigin: boolean;
-  /** */
+  /**  */
   faceBlendshapes?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceBlendshapes)[0];
   /** debug mode, default: false */
   debug?: boolean;

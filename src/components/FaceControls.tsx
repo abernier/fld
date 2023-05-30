@@ -121,6 +121,8 @@ type FaceControlsProps = {
   eyes?: boolean;
   /** */
   eyesAsOrigin?: boolean;
+  /**  */
+  depth: number;
   /** */
   debug?: boolean;
   /** */
