@@ -276,21 +276,27 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
     );
     React.useImperativeHandle(fref, () => api, [api]);
 
+    const [meshBboxSize] = React.useState(() => new THREE.Vector3());
     const bbox = meshRef.current?.geometry.boundingBox;
-    const one = bbox?.getSize(new THREE.Vector3()).z || 1;
+    const one = bbox?.getSize(meshBboxSize).z || 1;
     return (
       <group {...props}>
         <group ref={offsetRef}>
           <group ref={outerRef}>
             <group ref={scaleRef}>
-              <axesHelper args={[one]} />
-              <Line
-                points={[
-                  [0, 0, 0],
-                  [0, 0, -one],
-                ]}
-                color={0x00ffff}
-              />
+              {debug ? (
+                <>
+                  <axesHelper args={[one]} />
+                  <Line
+                    points={[
+                      [0, 0, 0],
+                      [0, 0, -one],
+                    ]}
+                    color={0x00ffff}
+                  />
+                </>
+              ) : null}
+
               <group ref={originRef}>
                 {eyes && (
                   <group name="eyes">
