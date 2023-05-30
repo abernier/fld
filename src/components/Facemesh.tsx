@@ -16,7 +16,7 @@ export type FacemeshProps = {
   points?: MediaPipePoints;
   /** @deprecated an face object as returned by face-landmarks-detection */
   face?: MediaPipeFaceMesh;
-  /** constant width of the facemesh, default: undefined */
+  /** constant width of the facemesh, default: 1 */
   width?: number;
   /** or constant height of the facemesh, default: undefined */
   height?: number;
@@ -88,7 +88,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       faceBlendshapes,
       offset,
       offsetScalar = 80,
-      width,
+      width = 1,
       height,
       depth,
       verticalTri = [159, 386, 152],
