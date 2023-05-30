@@ -52,8 +52,8 @@ function Scene() {
     origin: { value: 0, optional: true, disabled: true, min: 0, max: 477, step: 1 },
     depth: { value: 0.15, min: 0, max: 1, optional: true, disabled: true },
     player: folder({
-      rotation: [0, 0, 0],
-      position: [0, 0.125, 0.2],
+      rotation: [0, -Math.PI / 2, 0],
+      position: [-0.5, 0.2, 0],
     }),
   });
 
