@@ -120,6 +120,8 @@ type FaceControlsProps = {
   /** */
   eyes?: boolean;
   /** */
+  eyesAsOrigin?: boolean;
+  /** */
   debug?: boolean;
   /** */
   facemesh?: FacemeshProps;
@@ -139,6 +141,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
       offset = true,
       offsetScalar = 80,
       eyes = false,
+      eyesAsOrigin = true,
       debug = false,
       facemesh,
     },
@@ -271,11 +274,10 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
                 facialTransformationMatrix={facialTransformationMatrix}
                 faceBlendshapes={faceBlendshapes}
                 eyes={eyes}
+                eyesAsOrigin={eyesAsOrigin}
                 offset={offset}
                 offsetScalar={offsetScalar}
                 debug={debug}
-                // depth={0.13}
-                // origin={168}
                 rotation-z={Math.PI}
                 visible={debug}
               >

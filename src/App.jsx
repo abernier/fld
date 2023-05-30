@@ -46,8 +46,9 @@ function Scene() {
     // facialTransformationMatrix: true,
     // faceBlendshapes: true,
     offset: false,
-    offsetScalar: { value: 200, min: 0, max: 500 },
+    offsetScalar: { value: 150, min: 0, max: 500 },
     eyes: false,
+    eyesAsOrigin: false,
     origin: { value: 0, optional: true, disabled: true, min: 0, max: 477, step: 1 },
     depth: { value: 0.15, min: 0, max: 1 },
     player: folder({
@@ -83,6 +84,7 @@ function Scene() {
           offset={gui.offset}
           offsetScalar={gui.offsetScalar}
           eyes={gui.eyes}
+          eyesAsOrigin={gui.eyesAsOrigin}
           facemesh={{ depth: gui.depth, origin: gui.origin }}
           debug={gui.camera !== "user"}
         />
