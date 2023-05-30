@@ -12,7 +12,7 @@ export type MediaPipePoints =
   | (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceLandmarks)[0];
 
 export type FacemeshProps = {
-  /** an array of 468+ keypoints as return by mediapipe tasks-vision, default: a lambda face */
+  /** an array of 468+ keypoints as returned by mediapipe tasks-vision, default: a lambda face */
   points?: MediaPipePoints;
   /** @deprecated an face object as returned by face-landmarks-detection */
   face?: MediaPipeFaceMesh;
@@ -20,7 +20,7 @@ export type FacemeshProps = {
   width?: number;
   /** or height of the mesh, default: undefined */
   height?: number;
-  /** or depth of the mesh, default: 1 */
+  /** or depth of the mesh, default: undefined */
   depth?: number;
   /** a landmarks tri supposed to be vertical, default: [159, 386, 200] (see: https://github.com/tensorflow/tfjs-models/tree/master/face-landmarks-detection#mediapipe-facemesh-keypoints) */
   verticalTri?: [number, number, number];
@@ -187,20 +187,24 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       outerRef.current?.setRotationFromQuaternion(sightDirQuaternion);
 
       // 3. 👀 eyes
-      if (points.length > 468 && eyes) {
-        if (eyeRightRef.current && eyeLeftRef.current && originRef.current) {
-          if (eyesAsOrigin) {
-            // compute the middle of the 2 eyes as the `origin`
-            const eyeRightSphere = eyeRightRef.current._computeSphere(faceGeometry);
-            const eyeLeftSphere = eyeLeftRef.current._computeSphere(faceGeometry);
-            const eyesCenter = mean(eyeRightSphere.center, eyeLeftSphere.center);
-            origin = eyesCenter.negate(); // eslint-disable-line react-hooks/exhaustive-deps
+      if (eyes) {
+        if (!faceBlendshapes) {
+          console.warn("Facemesh `eyes` option only works if `faceBlendshapes` is provided: skipping.");
+        } else {
+          if (eyeRightRef.current && eyeLeftRef.current && originRef.current) {
+            if (eyesAsOrigin) {
+              // compute the middle of the 2 eyes as the `origin`
+              const eyeRightSphere = eyeRightRef.current._computeSphere(faceGeometry);
+              const eyeLeftSphere = eyeLeftRef.current._computeSphere(faceGeometry);
+              const eyesCenter = mean(eyeRightSphere.center, eyeLeftSphere.center);
+              origin = eyesCenter.negate(); // eslint-disable-line react-hooks/exhaustive-deps
 
-            eyeRightRef.current._update(faceGeometry, faceBlendshapes, eyeRightSphere);
-            eyeLeftRef.current._update(faceGeometry, faceBlendshapes, eyeLeftSphere);
-          } else {
-            eyeRightRef.current._update(faceGeometry, faceBlendshapes);
-            eyeLeftRef.current._update(faceGeometry, faceBlendshapes);
+              eyeRightRef.current._update(faceGeometry, faceBlendshapes, eyeRightSphere);
+              eyeLeftRef.current._update(faceGeometry, faceBlendshapes, eyeLeftSphere);
+            } else {
+              eyeRightRef.current._update(faceGeometry, faceBlendshapes);
+              eyeLeftRef.current._update(faceGeometry, faceBlendshapes);
+            }
           }
         }
       }
