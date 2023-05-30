@@ -173,7 +173,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
         const facemeshApi = facemeshApiRef.current;
 
         if (explCamera && facemeshApi) {
-          const { meshRef, outerRef, eyeRightRef, eyeLeftRef } = facemeshApi;
+          const { outerRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
           //
           // Compute posTarget and lookAtTarget
@@ -185,22 +185,24 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
             const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
             const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
 
-            if (irisRightDirRef.current && irisLeftDirRef.current && meshRef.current) {
+            if (irisRightDirRef.current && irisLeftDirRef.current && outerRef.current) {
               //
               // posTarget: mean of irisRightDirPos,irisLeftDirPos
               //
-              irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
-              irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), meshRef.current));
+              irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), outerRef.current));
+              irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), outerRef.current));
               posTarget.copy(
-                localToLocal(meshRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
+                localToLocal(outerRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
               );
 
               //
               // lookAt: mean of irisRightLookAt,irisLeftLookAt
               //
-              irisRightLookAt.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
-              irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, -1), meshRef.current));
-              lookAtTarget.copy(meshRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
+              irisRightLookAt.copy(
+                localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, -1), outerRef.current)
+              );
+              irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, -1), outerRef.current));
+              lookAtTarget.copy(outerRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
             }
           } else {
             // 2. 👤
