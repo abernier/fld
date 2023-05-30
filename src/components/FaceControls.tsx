@@ -173,7 +173,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
         const facemeshApi = facemeshApiRef.current;
 
         if (explCamera && facemeshApi) {
-          const { meshRef, eyeRightRef, eyeLeftRef } = facemeshApi;
+          const { meshRef, outerRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
           //
           // Compute posTarget and lookAtTarget
@@ -205,9 +205,9 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
           } else {
             // 2. 👤
 
-            if (meshRef.current) {
-              posTarget.copy(localToLocal(meshRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene));
-              lookAtTarget.copy(meshRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
+            if (outerRef.current) {
+              posTarget.copy(localToLocal(outerRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene));
+              lookAtTarget.copy(outerRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
             }
           }
 
