@@ -142,6 +142,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
       offsetScalar = 80,
       eyes = false,
       eyesAsOrigin = true,
+      depth = 0.15,
       debug = false,
       facemesh,
     },
@@ -273,6 +274,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
                 ref={facemeshApiRef}
                 {...facemesh}
                 points={points}
+                depth={depth}
                 facialTransformationMatrix={facialTransformationMatrix}
                 faceBlendshapes={faceBlendshapes}
                 eyes={eyes}

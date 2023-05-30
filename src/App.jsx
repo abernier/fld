@@ -85,7 +85,8 @@ function Scene() {
           offsetScalar={gui.offsetScalar}
           eyes={gui.eyes}
           eyesAsOrigin={gui.eyesAsOrigin}
-          facemesh={{ depth: gui.depth, origin: gui.origin }}
+          depth={gui.depth}
+          facemesh={{ origin: gui.origin }}
           debug={gui.camera !== "user"}
         />
         <PerspectiveCamera
