@@ -386,6 +386,7 @@ export const FacemeshEye = React.forwardRef<FacemeshEyeApi, FacemeshEyeProps>(({
     [sphere, side]
   );
 
+  const [rotation] = React.useState(() => new THREE.Euler());
   const _update = React.useCallback<FacemeshEyeApi["_update"]>(
     (faceGeometry, faceBlendshapes, sphere) => {
       //
@@ -427,12 +428,12 @@ export const FacemeshEye = React.forwardRef<FacemeshEyeApi, FacemeshEyeProps>(({
         const vfov = FACEMESH_EYE_CONFIG.fov.vertical * DEG2RAD;
         const rx = hfov * 0.5 * (lookDown - lookUp);
         const ry = vfov * 0.5 * (lookIn - lookOut) * (side === "left" ? 1 : -1);
-        const rotation = new THREE.Euler(rx, ry, 0);
+        rotation.set(rx, ry, 0);
 
         irisDirRef.current?.setRotationFromEuler(rotation);
       }
     },
-    [side, _computeSphere]
+    [_computeSphere, side, rotation]
   );
 
   //
