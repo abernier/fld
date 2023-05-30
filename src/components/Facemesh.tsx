@@ -222,13 +222,16 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       }
 
       // 4. re-scale
-      if ((width || height || depth) && scaleRef.current) {
+      if (scaleRef.current) {
         let scale = 1;
-        faceGeometry.boundingBox!.getSize(bboxSize);
-        if (width) scale = width / bboxSize.x; // fit in width
-        if (height) scale = height / bboxSize.y; // fit in height
-        if (depth) scale = depth / bboxSize.z; // fit in depth
-        scaleRef.current.scale.setScalar(scale);
+        if (width || height || depth) {
+          faceGeometry.boundingBox!.getSize(bboxSize);
+          if (width) scale = width / bboxSize.x; // fit in width
+          if (height) scale = height / bboxSize.y; // fit in height
+          if (depth) scale = depth / bboxSize.z; // fit in depth
+        }
+
+        scaleRef.current.scale.setScalar(scale !== 1 ? scale : 1);
       }
 
       faceGeometry.computeVertexNormals();
