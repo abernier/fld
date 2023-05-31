@@ -130,7 +130,8 @@ type FaceControlsProps = {
 };
 
 type FaceControlsApi = {
-  update: (delta: number) => void;
+  computeTarget: () => THREE.Object3D;
+  update: (delta: number, target?: THREE.Object3D) => void;
   facemeshApiRef: RefObject<FacemeshApi>;
 };
 
@@ -157,69 +158,78 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
     const facemeshApiRef = useRef<FacemeshApi>(null);
 
     //
-    // Position and orient camera, according to <Facemesh>
+    // computeTarget()
+    //
+    // Compute `target` position and rotation for the camera (according to <Facemesh>)
     //
     //  1. 👀 either following the 2 eyes
     //  2. 👤 or just the head mesh
     //
 
     const [target] = useState(() => new THREE.Object3D());
-    const [current] = useState(() => new THREE.Object3D());
-
     const [irisRightDirPos] = useState(() => new THREE.Vector3());
     const [irisLeftDirPos] = useState(() => new THREE.Vector3());
     const [irisRightLookAt] = useState(() => new THREE.Vector3());
     const [irisLeftLookAt] = useState(() => new THREE.Vector3());
+    const computeTarget = useCallback<FaceControlsApi["computeTarget"]>(() => {
+      // same parent as the camera
+      target.parent = explCamera.parent;
 
-    const update = useCallback<FaceControlsApi["update"]>(
-      function (delta) {
-        const facemeshApi = facemeshApiRef.current;
+      const facemeshApi = facemeshApiRef.current;
+      if (facemeshApi) {
+        const { outerRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
-        if (explCamera && facemeshApi) {
-          const { outerRef, eyeRightRef, eyeLeftRef } = facemeshApi;
+        if (eyeRightRef.current && eyeLeftRef.current) {
+          // 1. 👀
 
-          //
-          // Compute target position and rotation
-          //
+          const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
+          const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
 
-          // same parent
-          target.parent = current.parent = explCamera.parent;
+          if (irisRightDirRef.current && irisLeftDirRef.current && outerRef.current) {
+            //
+            // position: mean of irisRightDirPos,irisLeftDirPos
+            //
+            irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), outerRef.current));
+            irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), outerRef.current));
+            target.position.copy(
+              localToLocal(outerRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
+            );
 
-          if (eyeRightRef.current && eyeLeftRef.current) {
-            // 1. 👀
-
-            const { irisDirRef: irisRightDirRef } = eyeRightRef.current;
-            const { irisDirRef: irisLeftDirRef } = eyeLeftRef.current;
-
-            if (irisRightDirRef.current && irisLeftDirRef.current && outerRef.current) {
-              //
-              // position: mean of irisRightDirPos,irisLeftDirPos
-              //
-              irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), outerRef.current));
-              irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), outerRef.current));
-              target.position.copy(
-                localToLocal(outerRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
-              );
-
-              //
-              // lookAt: mean of irisRightLookAt,irisLeftLookAt
-              //
-              irisRightLookAt.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 1), outerRef.current));
-              irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 1), outerRef.current));
-              target.lookAt(outerRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
-            }
-          } else {
-            // 2. 👤
-
-            if (outerRef.current) {
-              target.position.copy(
-                localToLocal(outerRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene)
-              );
-              target.lookAt(outerRef.current.localToWorld(new THREE.Vector3(0, 0, 1)));
-            }
+            //
+            // lookAt: mean of irisRightLookAt,irisLeftLookAt
+            //
+            irisRightLookAt.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 1), outerRef.current));
+            irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 1), outerRef.current));
+            target.lookAt(outerRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
           }
+        } else {
+          // 2. 👤
 
-          // damping
+          if (outerRef.current) {
+            target.position.copy(
+              localToLocal(outerRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene)
+            );
+            target.lookAt(outerRef.current.localToWorld(new THREE.Vector3(0, 0, 1)));
+          }
+        }
+      }
+
+      return target;
+    }, [explCamera, irisLeftDirPos, irisLeftLookAt, irisRightDirPos, irisRightLookAt, scene, target]);
+
+    //
+    // update()
+    //
+    // Updating the camera position and rotation, following `current` (damped from `target`)
+    //
+
+    const [current] = useState(() => new THREE.Object3D());
+    const update = useCallback<FaceControlsApi["update"]>(
+      function (delta, target) {
+        if (explCamera) {
+          target ??= computeTarget();
+
+          // damping current
           if (smoothTime > 0) {
             const eps = 0.000000001;
             easing.damp3(current.position, target.position, smoothTime, delta, undefined, undefined, eps);
@@ -233,7 +243,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
           explCamera.rotation.copy(current.rotation);
         }
       },
-      [current, target, explCamera, irisLeftDirPos, irisLeftLookAt, irisRightDirPos, irisRightLookAt, scene, smoothTime]
+      [explCamera, computeTarget, smoothTime, current.position, current.rotation]
     );
 
     useFrame((_, delta) => {
@@ -246,9 +256,10 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
     const api = useMemo<FaceControlsApi>(
       () => ({
         facemeshApiRef,
+        computeTarget,
         update,
       }),
-      [update]
+      [update, computeTarget]
     );
     useImperativeHandle(fref, () => api, [api]);
 
