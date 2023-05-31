@@ -220,26 +220,30 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
     //
     // update()
     //
-    // Updating the camera position and rotation, following `target` (damped or not)
+    // Updating the camera `current` position and rotation, following `target`
     //
 
+    const [current] = useState(() => new THREE.Object3D());
     const update = useCallback<FaceControlsApi["update"]>(
       function (delta, target) {
         if (explCamera) {
           target ??= computeTarget();
 
-          // damp or not
+          // damping current
           if (smoothTime > 0) {
             const eps = 1e-9;
-            easing.damp3(explCamera.position, target.position, smoothTime, delta, undefined, undefined, eps);
-            easing.dampE(explCamera.rotation, target.rotation, smoothTime, delta, undefined, undefined, eps);
+            easing.damp3(current.position, target.position, smoothTime, delta, undefined, undefined, eps);
+            easing.dampE(current.rotation, target.rotation, smoothTime, delta, undefined, undefined, eps);
           } else {
-            explCamera.position.copy(target.position);
-            explCamera.rotation.copy(target.rotation);
+            current.position.copy(target.position);
+            current.rotation.copy(target.rotation);
           }
+
+          explCamera.position.copy(current.position);
+          explCamera.rotation.copy(current.rotation);
         }
       },
-      [explCamera, computeTarget, smoothTime]
+      [explCamera, computeTarget, smoothTime, current.position, current.rotation]
     );
 
     useFrame((_, delta) => {

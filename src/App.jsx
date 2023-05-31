@@ -42,7 +42,7 @@ export default function App() {
 
 function Scene() {
   const gui = useControls({
-    camera: { value: "cc", options: ["user", "cc"] },
+    camera: { value: "user", options: ["user", "cc"] },
     smoothTime: { value: 0.45, min: 0.000001, max: 1 },
     offset: true,
     offsetScalar: { value: 80, min: 0, max: 500 },
@@ -62,15 +62,21 @@ function Scene() {
   const [userCam, setUserCam] = useState();
 
   const faceControlsApiRef = useRef();
+
+  const [current] = useState(() => new THREE.Object3D());
   useFrame((_, delta) => {
     if (faceControlsApiRef.current) {
       const target = faceControlsApiRef.current.computeTarget();
 
       // faceControlsApiRef.current.update(delta, target);
-      easing.damp3(userCam.position, target.position, 0.25, delta, undefined, undefined, 1e-9);
-      easing.dampE(userCam.rotation, target.rotation, 0.25, delta, undefined, undefined, 1e-9);
       // userCam.position.copy(target.position);
       // userCam.rotation.copy(target.rotation);
+      const eps = 1e-9;
+      easing.damp3(current.position, target.position, 0.25, delta, undefined, undefined, eps);
+      easing.dampE(current.rotation, target.rotation, 0.25, delta, undefined, undefined, eps);
+
+      userCam.position.copy(current.position);
+      userCam.rotation.copy(current.rotation);
     }
   });
 
