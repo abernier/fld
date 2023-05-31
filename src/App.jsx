@@ -15,6 +15,7 @@ import {
   Center,
 } from "@react-three/drei";
 import { useControls, button, folder } from "leva";
+import { easing } from "maath";
 
 import FaceLandmarker, { FaceLandmarkerDefaults } from "./components/FaceLandmarker";
 
@@ -63,7 +64,13 @@ function Scene() {
   const faceControlsApiRef = useRef();
   useFrame((_, delta) => {
     if (faceControlsApiRef.current) {
-      faceControlsApiRef.current.update(delta);
+      const target = faceControlsApiRef.current.computeTarget();
+
+      // faceControlsApiRef.current.update(delta, target);
+      easing.damp3(userCam.position, target.position, 0.25, delta, undefined, undefined, 1e-9);
+      easing.dampE(userCam.rotation, target.rotation, 0.25, delta, undefined, undefined, 1e-9);
+      // userCam.position.copy(target.position);
+      // userCam.rotation.copy(target.rotation);
     }
   });
 
