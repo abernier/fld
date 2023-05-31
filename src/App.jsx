@@ -43,17 +43,15 @@ function Scene() {
   const gui = useControls({
     camera: { value: "cc", options: ["user", "cc"] },
     smoothTime: { value: 0.45, min: 0.000001, max: 1 },
-    // facialTransformationMatrix: true,
-    // faceBlendshapes: true,
-    offset: false,
-    offsetScalar: { value: 150, min: 0, max: 500 },
+    offset: true,
+    offsetScalar: { value: 80, min: 0, max: 500 },
     eyes: false,
     eyesAsOrigin: false,
     origin: { value: 0, optional: true, disabled: true, min: 0, max: 477, step: 1 },
     depth: { value: 0.15, min: 0, max: 1, optional: true, disabled: true },
     player: folder({
       rotation: [0, -Math.PI / 2, 0],
-      position: [-0.5, 0.2, 0],
+      position: [-0.2, 0.2, 0],
     }),
   });
 

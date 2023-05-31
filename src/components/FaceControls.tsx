@@ -163,14 +163,14 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
     //  2. 👤 or just the head mesh
     //
 
-    const [posTarget] = useState(() => new THREE.Vector3());
-    const [posCurrent] = useState(() => new THREE.Vector3());
-    const [lookAtTarget] = useState(() => new THREE.Vector3());
-    const [lookAtCurrent] = useState(() => new THREE.Vector3());
+    const [target] = useState(() => new THREE.Object3D());
+    const [current] = useState(() => new THREE.Object3D());
+
     const [irisRightDirPos] = useState(() => new THREE.Vector3());
     const [irisLeftDirPos] = useState(() => new THREE.Vector3());
     const [irisRightLookAt] = useState(() => new THREE.Vector3());
     const [irisLeftLookAt] = useState(() => new THREE.Vector3());
+
     const update = useCallback<FaceControlsApi["update"]>(
       function (delta) {
         const facemeshApi = facemeshApiRef.current;
@@ -179,8 +179,11 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
           const { outerRef, eyeRightRef, eyeLeftRef } = facemeshApi;
 
           //
-          // Compute posTarget and lookAtTarget
+          // Compute target position and rotation
           //
+
+          // same parent
+          target.parent = current.parent = explCamera.parent;
 
           if (eyeRightRef.current && eyeLeftRef.current) {
             // 1. 👀
@@ -190,59 +193,47 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
 
             if (irisRightDirRef.current && irisLeftDirRef.current && outerRef.current) {
               //
-              // posTarget: mean of irisRightDirPos,irisLeftDirPos
+              // position: mean of irisRightDirPos,irisLeftDirPos
               //
               irisRightDirPos.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 0), outerRef.current));
               irisLeftDirPos.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 0), outerRef.current));
-              posTarget.copy(
+              target.position.copy(
                 localToLocal(outerRef.current, mean(irisRightDirPos, irisLeftDirPos), explCamera.parent || scene)
               );
 
               //
               // lookAt: mean of irisRightLookAt,irisLeftLookAt
               //
-              irisRightLookAt.copy(
-                localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, -1), outerRef.current)
-              );
-              irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, -1), outerRef.current));
-              lookAtTarget.copy(outerRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
+              irisRightLookAt.copy(localToLocal(irisRightDirRef.current, new THREE.Vector3(0, 0, 1), outerRef.current));
+              irisLeftLookAt.copy(localToLocal(irisLeftDirRef.current, new THREE.Vector3(0, 0, 1), outerRef.current));
+              target.lookAt(outerRef.current.localToWorld(mean(irisRightLookAt, irisLeftLookAt)));
             }
           } else {
             // 2. 👤
 
             if (outerRef.current) {
-              posTarget.copy(localToLocal(outerRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene));
-              lookAtTarget.copy(outerRef.current.localToWorld(new THREE.Vector3(0, 0, -1)));
+              target.position.copy(
+                localToLocal(outerRef.current, new THREE.Vector3(0, 0, 0), explCamera.parent || scene)
+              );
+              target.lookAt(outerRef.current.localToWorld(new THREE.Vector3(0, 0, 1)));
             }
           }
 
           // damping
           if (smoothTime > 0) {
             const eps = 0.000000001;
-            easing.damp3(posCurrent, posTarget, smoothTime, delta, undefined, undefined, eps);
-            easing.damp3(lookAtCurrent, lookAtTarget, smoothTime, delta, undefined, undefined, eps);
+            easing.damp3(current.position, target.position, smoothTime, delta, undefined, undefined, eps);
+            easing.dampE(current.rotation, target.rotation, smoothTime, delta, undefined, undefined, eps);
           } else {
-            posCurrent.copy(posTarget);
-            lookAtCurrent.copy(lookAtTarget);
+            current.position.copy(target.position);
+            current.rotation.copy(target.rotation);
           }
 
-          explCamera.position.copy(posCurrent);
-          explCamera.lookAt(lookAtCurrent);
+          explCamera.position.copy(current.position);
+          explCamera.rotation.copy(current.rotation);
         }
       },
-      [
-        explCamera,
-        irisLeftDirPos,
-        irisLeftLookAt,
-        irisRightDirPos,
-        irisRightLookAt,
-        lookAtCurrent,
-        lookAtTarget,
-        posCurrent,
-        posTarget,
-        scene,
-        smoothTime,
-      ]
+      [current, target, explCamera, irisLeftDirPos, irisLeftLookAt, irisRightDirPos, irisRightLookAt, scene, smoothTime]
     );
 
     useFrame((_, delta) => {
