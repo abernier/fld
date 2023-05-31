@@ -171,8 +171,8 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
     const [irisLeftDirPos] = useState(() => new THREE.Vector3());
     const [irisRightLookAt] = useState(() => new THREE.Vector3());
     const [irisLeftLookAt] = useState(() => new THREE.Vector3());
-    const update = useCallback(
-      function (delta: number) {
+    const update = useCallback<FaceControlsApi["update"]>(
+      function (delta) {
         const facemeshApi = facemeshApiRef.current;
 
         if (explCamera && facemeshApi) {
