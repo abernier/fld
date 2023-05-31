@@ -108,7 +108,7 @@ const VideoMaterial = ({
 
 type FaceControlsProps = {
   /**  */
-  camera: THREE.Camera;
+  camera?: THREE.Camera;
   /**  */
   manual?: boolean;
   /**  */
