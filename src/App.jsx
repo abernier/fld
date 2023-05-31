@@ -72,8 +72,8 @@ function Scene() {
       // userCam.position.copy(target.position);
       // userCam.rotation.copy(target.rotation);
       const eps = 1e-9;
-      easing.damp3(current.position, target.position, 0.25, delta, undefined, undefined, eps);
-      easing.dampE(current.rotation, target.rotation, 0.25, delta, undefined, undefined, eps);
+      easing.damp3(current.position, target.position, gui.smoothTime, delta, undefined, undefined, eps);
+      easing.dampE(current.rotation, target.rotation, gui.smoothTime, delta, undefined, undefined, eps);
 
       userCam.position.copy(current.position);
       userCam.rotation.copy(current.rotation);
