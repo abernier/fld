@@ -188,7 +188,7 @@ const Suzi = (props, ref) => {
 };
 
 const Plant = (props) => {
-  const { nodes, materials } = useGLTF("/potted_plant.glb");
+  const { nodes, materials } = useGLTF(new URL("/potted_plant.glb", import.meta.url).toString());
   return (
     <group {...props} dispose={null}>
       <group rotation={[-Math.PI / 2, 0, 0]}>
