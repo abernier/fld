@@ -13,13 +13,15 @@ import {
   useGLTF,
   Center,
   Plane,
+  Resize,
 } from "@react-three/drei";
 import { useControls, button, folder } from "leva";
 import { easing } from "maath";
 
 import FaceLandmarker, { FaceLandmarkerDefaults } from "./components/FaceLandmarker";
-
 import { FaceControls } from "./components/FaceControls";
+
+import { Laptop } from "./Laptop";
 
 export default function App() {
   const visionBasePath = new URL("/tasks-vision-wasm", import.meta.url).toString() // prettier-ignore
@@ -40,7 +42,7 @@ export default function App() {
   );
 }
 
-const vids = ["/metahumans.mp4"];
+const vids = ["/metahumans.mp4", "/metahumans2.mp4"];
 
 function Scene() {
   const gui = useControls({
@@ -54,14 +56,14 @@ function Scene() {
     },
     smoothTime: { value: 0.45, min: 0.000001, max: 1 },
     offset: true,
-    offsetScalar: { value: 80, min: 0, max: 500 },
+    offsetScalar: { value: 60, min: 0, max: 500 },
     eyes: false,
     eyesAsOrigin: false,
     origin: { value: 0, optional: true, disabled: true, min: 0, max: 477, step: 1 },
     depth: { value: 0.15, min: 0, max: 1, optional: true, disabled: true },
     player: folder({
-      rotation: [0, -Math.PI / 2, 0],
-      position: [-0.2, 0.2, 0],
+      rotation: [0, 0, 0],
+      position: [-0, 0.2, 0],
     }),
   });
 
@@ -73,12 +75,12 @@ function Scene() {
   const controls = useThree((state) => state.controls);
   const faceControlsApiRef = useRef();
 
-  const planeRef = useRef(null);
+  const screenMatRef = useRef(null);
   const onVideoFrame = useCallback(
     (e) => {
       controls.detect(e.texture.source.data, e.time);
 
-      // planeRef.current.material.map = e.texture;
+      screenMatRef.current.map = e.texture;
     },
     [controls]
   );
@@ -102,10 +104,6 @@ function Scene() {
 
   return (
     <>
-      <Center top>
-        <Suzi rotation={[-0.63, 0, 0]} scale={0.1} />
-      </Center>
-
       <group rotation={gui.rotation} position={gui.position}>
         <FaceControls
           camera={userCam}
@@ -135,11 +133,16 @@ function Scene() {
           near={0.1}
           far={2}
         />
-
-        {/* <Plane ref={planeRef} args={[1, 9 / 16]} scale={0.5}>
-          <meshStandardMaterial />
-        </Plane> */}
       </group>
+
+      <Laptop flipHorizontal>
+        <meshStandardMaterial ref={screenMatRef} side={THREE.DoubleSide} transparent opacity={0.9} />
+      </Laptop>
+      <Plant position={[-0.25, 0, -0.2]} scale={0.5} />
+      {/* <Center top position={[-0.25, 0, -0.2]} scale={0.5}>
+        <Plant3 />
+      </Center> */}
+
       {/* <axesHelper /> */}
       <Ground />
       {/* <Shadows /> */}
@@ -177,6 +180,18 @@ const Suzi = (props, ref) => {
         <meshStandardMaterial color="#9d4b4b" />
       </mesh>
     </>
+  );
+};
+
+const Plant = (props) => {
+  const { nodes, materials } = useGLTF("/potted_plant.glb");
+  return (
+    <group {...props} dispose={null}>
+      <group rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh castShadow receiveShadow geometry={nodes.Object_2.geometry} material={materials.model_u1_v1} />
+        <mesh castShadow receiveShadow geometry={nodes.Object_3.geometry} material={materials.model_u1_v1} />
+      </group>
+    </group>
   );
 };
 
