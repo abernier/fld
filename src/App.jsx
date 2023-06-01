@@ -47,7 +47,6 @@ function Scene() {
     new URL("/metahumans.mp4", import.meta.url).toString(),
     new URL("/metahumans2.mp4", import.meta.url).toString(),
   ];
-  console.log(vids);
 
   const gui = useControls({
     camera: { value: "user", options: ["user", "cc"] },
