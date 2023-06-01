@@ -5,7 +5,6 @@ import {
   useEffect,
   useRef,
   useCallback,
-  ReactNode,
   forwardRef,
   useMemo,
   useImperativeHandle,
@@ -21,6 +20,8 @@ import { easing } from "maath";
 import { Facemesh, FacemeshApi, FacemeshProps } from "./Facemesh";
 import { useFaceLandmarker } from "./FaceLandmarker";
 
+type VideoTextureSrc = Parameters<typeof useVideoTexture>[0]; // useVideoTexture 1st arg `src` type
+
 function mean(v1: THREE.Vector3, v2: THREE.Vector3) {
   return v1.clone().add(v2).multiplyScalar(0.5);
 }
@@ -31,26 +32,41 @@ function localToLocal(objSrc: THREE.Object3D, v: THREE.Vector3, objDst: THREE.Ob
   return objDst.worldToLocal(v_world);
 }
 
-const Webcam = ({ children }: { children?: ReactNode }) => {
+type WebcamProps = {
+  videoTextureSrc?: VideoTextureSrc;
+  autostart?: boolean;
+};
+
+const Webcam = ({ videoTextureSrc, autostart = true }: WebcamProps) => {
   const [stream, setStream] = useState<MediaStream>();
 
   const faceControls = useFaceControls();
   useEffect(() => {
-    navigator.mediaDevices
-      .getUserMedia({
-        audio: false,
-        video: { facingMode: "user" },
-      })
-      .then((stream) => {
-        faceControls.dispatchEvent({ type: "stream", stream });
-        setStream(stream);
-      })
-      .catch(console.error);
-  }, [faceControls]);
+    let strm: MediaStream;
+
+    if (!videoTextureSrc) {
+      navigator.mediaDevices
+        .getUserMedia({
+          audio: false,
+          video: { facingMode: "user" },
+        })
+        .then((s) => {
+          strm = s;
+          faceControls.dispatchEvent({ type: "stream", stream: strm });
+          setStream(strm);
+        })
+        .catch(console.error);
+    }
+
+    return () => {
+      console.log("stopping stream");
+      strm?.getTracks().forEach((track) => track.stop());
+    };
+  }, [faceControls, videoTextureSrc]);
 
   return (
     <Suspense fallback={null}>
-      <VideoMaterial src={stream!}>{children}</VideoMaterial>
+      <VideoTexture src={videoTextureSrc || stream!} />
     </Suspense>
   );
 };
@@ -71,7 +87,7 @@ const useVideoFrame = (video: HTMLVideoElement, f: (...args: any) => any) => {
   }, [video, f]);
 };
 
-const VideoMaterial = ({ src, children }: { src: MediaStream; children?: ReactNode }) => {
+const VideoTexture = ({ src }: { src: VideoTextureSrc }) => {
   const texture = useVideoTexture(src);
   const video = texture.source.data;
 
@@ -84,7 +100,7 @@ const VideoMaterial = ({ src, children }: { src: MediaStream; children?: ReactNo
   );
   useVideoFrame(video, onVideoFrame);
 
-  return <>{children}</>;
+  return <></>;
 };
 
 //
@@ -94,6 +110,12 @@ const VideoMaterial = ({ src, children }: { src: MediaStream; children?: ReactNo
 type FaceControlsProps = {
   /**  */
   camera?: THREE.Camera;
+  /** */
+  autostart?: boolean;
+  /** */
+  webcam?: boolean;
+  /**  */
+  webcamVideoTextureSrc?: VideoTextureSrc;
   /**  */
   manualUpdate?: boolean;
   /**  */
@@ -133,6 +155,9 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
   (
     {
       camera,
+      autostart = true,
+      webcam = true,
+      webcamVideoTextureSrc,
       manualUpdate = false,
       manualDetect = false,
       onVideoFrame,
@@ -310,7 +335,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
     const faceBlendshapes = faces?.faceBlendshapes?.[0];
     return (
       <FaceControlsContext.Provider value={api}>
-        <Webcam />
+        {webcam && <Webcam autostart={autostart} videoTextureSrc={webcamVideoTextureSrc} />}
 
         <Facemesh
           ref={facemeshApiRef}

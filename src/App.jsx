@@ -10,9 +10,9 @@ import {
   PerspectiveCamera,
   useHelper,
   Stats,
-  Box,
   useGLTF,
   Center,
+  Plane,
 } from "@react-three/drei";
 import { useControls, button, folder } from "leva";
 import { easing } from "maath";
@@ -40,9 +40,18 @@ export default function App() {
   );
 }
 
+const vids = ["/metahumans.mp4"];
+
 function Scene() {
   const gui = useControls({
     camera: { value: "user", options: ["user", "cc"] },
+    webcam: true,
+    webcamVideoTextureSrc: {
+      value: vids[0],
+      options: vids,
+      optional: true,
+      disabled: true,
+    },
     smoothTime: { value: 0.45, min: 0.000001, max: 1 },
     offset: true,
     offsetScalar: { value: 80, min: 0, max: 500 },
@@ -64,9 +73,12 @@ function Scene() {
   const controls = useThree((state) => state.controls);
   const faceControlsApiRef = useRef();
 
+  const planeRef = useRef(null);
   const onVideoFrame = useCallback(
     (e) => {
       controls.detect(e.texture.source.data, e.time);
+
+      // planeRef.current.material.map = e.texture;
     },
     [controls]
   );
@@ -99,6 +111,8 @@ function Scene() {
           camera={userCam}
           ref={faceControlsApiRef}
           makeDefault
+          webcam={gui.webcam}
+          webcamVideoTextureSrc={gui.webcamVideoTextureSrc}
           manualUpdate
           manualDetect
           onVideoFrame={onVideoFrame}
@@ -121,8 +135,11 @@ function Scene() {
           near={0.1}
           far={2}
         />
-      </group>
 
+        {/* <Plane ref={planeRef} args={[1, 9 / 16]} scale={0.5}>
+          <meshStandardMaterial />
+        </Plane> */}
+      </group>
       {/* <axesHelper /> */}
       <Ground />
       {/* <Shadows /> */}
