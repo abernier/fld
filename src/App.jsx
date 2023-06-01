@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   Grid,
   AccumulativeShadows,
@@ -61,7 +61,15 @@ function Scene() {
 
   const [userCam, setUserCam] = useState();
 
+  const controls = useThree((state) => state.controls);
   const faceControlsApiRef = useRef();
+
+  const onVideoFrame = useCallback(
+    (e) => {
+      controls.detect(e.texture.source.data, e.time);
+    },
+    [controls]
+  );
 
   const [current] = useState(() => new THREE.Object3D());
   useFrame((_, delta) => {
@@ -90,14 +98,17 @@ function Scene() {
         <FaceControls
           camera={userCam}
           ref={faceControlsApiRef}
-          manual
+          makeDefault
+          manualUpdate
+          manualDetect
+          onVideoFrame={onVideoFrame}
           smoothTime={gui.smoothTime}
           offset={gui.offset}
           offsetScalar={gui.offsetScalar}
           eyes={gui.eyes}
           eyesAsOrigin={gui.eyesAsOrigin}
           depth={gui.depth}
-          facemesh={{ origin: gui.origin }}
+          facemesh={{ origin: gui.origin, position: [0, 0, 0] }}
           debug={gui.camera !== "user"}
         />
         <PerspectiveCamera

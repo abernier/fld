@@ -10,6 +10,8 @@ import {
   useMemo,
   useImperativeHandle,
   RefObject,
+  createContext,
+  useContext,
 } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useVideoTexture } from "@react-three/drei";
@@ -18,8 +20,6 @@ import { easing } from "maath";
 
 import { Facemesh, FacemeshApi, FacemeshProps } from "./Facemesh";
 import { useFaceLandmarker } from "./FaceLandmarker";
-
-const isFunction = (node: any) => typeof node === "function";
 
 function mean(v1: THREE.Vector3, v2: THREE.Vector3) {
   return v1.clone().add(v2).multiplyScalar(0.5);
@@ -30,6 +30,30 @@ function localToLocal(objSrc: THREE.Object3D, v: THREE.Vector3, objDst: THREE.Ob
   const v_world = objSrc.localToWorld(v);
   return objDst.worldToLocal(v_world);
 }
+
+const Webcam = ({ children }: { children?: ReactNode }) => {
+  const [stream, setStream] = useState<MediaStream>();
+
+  const faceControls = useFaceControls();
+  useEffect(() => {
+    navigator.mediaDevices
+      .getUserMedia({
+        audio: false,
+        video: { facingMode: "user" },
+      })
+      .then((stream) => {
+        faceControls.dispatchEvent({ type: "stream", stream });
+        setStream(stream);
+      })
+      .catch(console.error);
+  }, [faceControls]);
+
+  return (
+    <Suspense fallback={null}>
+      <VideoMaterial src={stream!}>{children}</VideoMaterial>
+    </Suspense>
+  );
+};
 
 const useVideoFrame = (video: HTMLVideoElement, f: (...args: any) => any) => {
   // https://web.dev/requestvideoframecallback-rvfc/
@@ -47,59 +71,20 @@ const useVideoFrame = (video: HTMLVideoElement, f: (...args: any) => any) => {
   }, [video, f]);
 };
 
-const Webcam = ({ children }: { children?: (faces: FaceLandmarkerResult | undefined) => ReactNode }) => {
-  const [stream, setStream] = useState<MediaStream>();
-
-  useEffect(() => {
-    navigator.mediaDevices
-      .getUserMedia({
-        audio: false,
-        video: { facingMode: "user" },
-      })
-      .then((stream) => setStream(stream))
-      .catch(console.error);
-  }, []);
-
-  return (
-    <Suspense fallback={null}>
-      <VideoMaterial src={stream!}>{children}</VideoMaterial>
-    </Suspense>
-  );
-};
-
-const VideoMaterial = ({
-  src,
-  children,
-}: {
-  src: MediaStream;
-  children?: (faces: FaceLandmarkerResult | undefined) => ReactNode | ReactNode;
-}) => {
-  const [faces, setFaces] = useState<FaceLandmarkerResult>();
-
+const VideoMaterial = ({ src, children }: { src: MediaStream; children?: ReactNode }) => {
   const texture = useVideoTexture(src);
   const video = texture.source.data;
 
-  const faceLandmarker = useFaceLandmarker();
-
+  const faceControls = useFaceControls();
   const onVideoFrame = useCallback(
     (time: number) => {
-      const faces = faceLandmarker?.detectForVideo(video, time);
-      setFaces(faces);
+      faceControls.dispatchEvent({ type: "videoFrame", texture, time });
     },
-    [faceLandmarker, video]
+    [texture, faceControls]
   );
   useVideoFrame(video, onVideoFrame);
 
-  // const clock = useThree((state) => state.clock);
-  // useFrame(() => {
-  //   const timestamp = clock.getElapsedTime() * 1000;
-  //   const faces = faceLandmarker.detectForVideo(video, timestamp);
-  //   // console.log("faces=", faces);
-  //   setFaces(faces);
-  // });
-
-  const functional = isFunction(children);
-  return <>{functional ? children?.(faces) : children}</>;
+  return <>{children}</>;
 };
 
 //
@@ -110,7 +95,13 @@ type FaceControlsProps = {
   /**  */
   camera?: THREE.Camera;
   /**  */
-  manual?: boolean;
+  manualUpdate?: boolean;
+  /**  */
+  manualDetect?: boolean;
+  /** */
+  onVideoFrame?: (e: THREE.Event) => void;
+  /** */
+  makeDefault?: boolean;
   /**  */
   smoothTime?: number;
   /**  */
@@ -129,17 +120,22 @@ type FaceControlsProps = {
   facemesh?: FacemeshProps;
 };
 
-type FaceControlsApi = {
+type FaceControlsApi = THREE.EventDispatcher & {
+  detect: (video: HTMLVideoElement, time: number) => void;
   computeTarget: () => THREE.Object3D;
   update: (delta: number, target?: THREE.Object3D) => void;
   facemeshApiRef: RefObject<FacemeshApi>;
 };
 
+const FaceControlsContext = createContext({} as FaceControlsApi);
+
 export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
   (
     {
       camera,
-      manual = false,
+      manualUpdate = false,
+      manualDetect = false,
+      onVideoFrame,
       smoothTime = 0.25,
       offset = true,
       offsetScalar = 80,
@@ -148,11 +144,14 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
       depth = 0.15,
       debug = false,
       facemesh,
+      makeDefault,
     },
     fref
   ) => {
     const scene = useThree((state) => state.scene);
     const defaultCamera = useThree((state) => state.camera);
+    const set = useThree((state) => state.set);
+    const get = useThree((state) => state.get);
     const explCamera = camera || defaultCamera;
 
     const facemeshApiRef = useRef<FacemeshApi>(null);
@@ -229,12 +228,13 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
         if (explCamera) {
           target ??= computeTarget();
 
-          // damping current
           if (smoothTime > 0) {
+            // damping current
             const eps = 1e-9;
             easing.damp3(current.position, target.position, smoothTime, delta, undefined, undefined, eps);
             easing.dampE(current.rotation, target.rotation, smoothTime, delta, undefined, undefined, eps);
           } else {
+            // instant
             current.position.copy(target.position);
             current.rotation.copy(target.rotation);
           }
@@ -246,55 +246,92 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
       [explCamera, computeTarget, smoothTime, current.position, current.rotation]
     );
 
+    //
+    // detect()
+    //
+
+    const [faces, setFaces] = useState<FaceLandmarkerResult>();
+    const faceLandmarker = useFaceLandmarker();
+    const detect = useCallback<FaceControlsApi["detect"]>(
+      (video, time) => {
+        const faces = faceLandmarker?.detectForVideo(video, time);
+        setFaces(faces);
+      },
+      [faceLandmarker]
+    );
+
     useFrame((_, delta) => {
-      if (!manual) {
+      if (!manualUpdate) {
         update(delta);
       }
     });
 
     // Ref API
     const api = useMemo<FaceControlsApi>(
-      () => ({
-        facemeshApiRef,
-        computeTarget,
-        update,
-      }),
-      [update, computeTarget]
+      () =>
+        Object.assign(Object.create(THREE.EventDispatcher.prototype), {
+          detect,
+          computeTarget,
+          update,
+          facemeshApiRef,
+        }),
+      [detect, computeTarget, update]
     );
     useImperativeHandle(fref, () => api, [api]);
 
+    //
+    // events callbacks
+    //
+
+    useEffect(() => {
+      const onVideoFrameCb = (e: THREE.Event) => {
+        if (!manualDetect) detect(e.texture.source.data, e.time);
+        if (onVideoFrame) onVideoFrame(e);
+      };
+
+      api.addEventListener("videoFrame", onVideoFrameCb);
+
+      return () => {
+        api.removeEventListener("videoFrame", onVideoFrameCb);
+      };
+    }, [api, detect, faceLandmarker, manualDetect, onVideoFrame]);
+
+    // `controls` global state
+    useEffect(() => {
+      if (makeDefault) {
+        const old = get().controls;
+        set({ controls: api });
+        return () => set({ controls: old });
+      }
+    }, [makeDefault, api, get, set]);
+
+    const points = faces?.faceLandmarks[0];
+    const facialTransformationMatrix = faces?.facialTransformationMatrixes?.[0];
+    const faceBlendshapes = faces?.faceBlendshapes?.[0];
     return (
-      <>
-        <Webcam>
-          {(faces) => {
-            if (!faces) return;
+      <FaceControlsContext.Provider value={api}>
+        <Webcam />
 
-            const points = faces.faceLandmarks[0];
-            const facialTransformationMatrix = faces.facialTransformationMatrixes?.[0];
-            const faceBlendshapes = faces.faceBlendshapes?.[0];
-
-            return (
-              <Facemesh
-                ref={facemeshApiRef}
-                {...facemesh}
-                points={points}
-                depth={depth}
-                facialTransformationMatrix={facialTransformationMatrix}
-                faceBlendshapes={faceBlendshapes}
-                eyes={eyes}
-                eyesAsOrigin={eyesAsOrigin}
-                offset={offset}
-                offsetScalar={offsetScalar}
-                debug={debug}
-                rotation-z={Math.PI}
-                visible={debug}
-              >
-                <meshStandardMaterial flatShading={true} side={THREE.DoubleSide} />
-              </Facemesh>
-            );
-          }}
-        </Webcam>
-      </>
+        <Facemesh
+          ref={facemeshApiRef}
+          {...facemesh}
+          points={points}
+          depth={depth}
+          facialTransformationMatrix={facialTransformationMatrix}
+          faceBlendshapes={faceBlendshapes}
+          eyes={eyes}
+          eyesAsOrigin={eyesAsOrigin}
+          offset={offset}
+          offsetScalar={offsetScalar}
+          debug={debug}
+          rotation-z={Math.PI}
+          visible={debug}
+        >
+          <meshStandardMaterial flatShading={true} side={THREE.DoubleSide} />
+        </Facemesh>
+      </FaceControlsContext.Provider>
     );
   }
 );
+
+export const useFaceControls = () => useContext(FaceControlsContext);
