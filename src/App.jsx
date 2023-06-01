@@ -42,7 +42,7 @@ export default function App() {
   );
 }
 
-const vids = ["/metahumans.mp4", "/metahumans2.mp4"];
+const vids = ["/metahumans.mp4", "/metahumans2.mp4"].map((el) => new URL(el, import.meta.url).toString());
 
 function Scene() {
   const gui = useControls({
