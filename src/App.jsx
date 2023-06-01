@@ -58,7 +58,7 @@ function Scene() {
     offset: true,
     offsetScalar: { value: 60, min: 0, max: 500 },
     eyes: false,
-    eyesAsOrigin: false,
+    eyesAsOrigin: true,
     origin: { value: 0, optional: true, disabled: true, min: 0, max: 477, step: 1 },
     depth: { value: 0.15, min: 0, max: 1, optional: true, disabled: true },
     player: folder({
