@@ -16,11 +16,11 @@ export type FacemeshProps = {
   points?: MediaPipePoints;
   /** @deprecated an face object as returned by tensorflow/tfjs-models face-landmarks-detection */
   face?: MediaPipeFaceMesh;
-  /** constant width of the mesh, default: 1 */
+  /** constant width of the mesh, default: undefined */
   width?: number;
   /** or constant height of the mesh, default: undefined */
   height?: number;
-  /** or constant depth of the mesh, default: undefined */
+  /** or constant depth of the mesh, default: 1 */
   depth?: number;
   /** a landmarks tri supposed to be vertical, default: [159, 386, 200] (see: https://github.com/tensorflow/tfjs-models/tree/master/face-landmarks-detection#mediapipe-facemesh-keypoints) */
   verticalTri?: [number, number, number];
@@ -34,10 +34,10 @@ export type FacemeshProps = {
   offsetScalar?: number;
   /** Fface blendshapes, as returned by FaceLandmarkerResult.faceBlendshapes (see: https://developers.google.com/mediapipe/solutions/vision/face_landmarker/web_js#handle_and_display_results) */
   faceBlendshapes?: (typeof FacemeshDatas.SAMPLE_FACELANDMARKER_RESULT.faceBlendshapes)[0];
-  /** whether to enable eyes (nb. `faceBlendshapes` is required for), default: false */
+  /** whether to enable eyes (nb. `faceBlendshapes` is required for), default: true */
   eyes?: boolean;
   /** Force `origin` to be the middle of the 2 eyes (nb. `eyes` is required for), default: false */
-  eyesAsOrigin: boolean;
+  eyesAsOrigin?: boolean;
   /** debug mode, default: false */
   debug?: boolean;
 } & Omit<JSX.IntrinsicElements["group"], "ref">;
@@ -88,13 +88,13 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
       faceBlendshapes,
       offset,
       offsetScalar = 80,
-      width = 1,
+      width,
       height,
-      depth,
+      depth = 1,
       verticalTri = [159, 386, 152],
       origin,
       eyes = true,
-      eyesAsOrigin = true,
+      eyesAsOrigin = false,
       debug = false,
       children,
       ...props
@@ -298,7 +298,7 @@ export const Facemesh = React.forwardRef<FacemeshApi, FacemeshProps>(
               ) : null}
 
               <group ref={originRef}>
-                {eyes && (
+                {eyes && faceBlendshapes && (
                   <group name="eyes">
                     <FacemeshEye side="left" ref={eyeRightRef} debug={debug} />
                     <FacemeshEye side="right" ref={eyeLeftRef} debug={debug} />
