@@ -15,7 +15,7 @@ import {
   Plane,
   Resize,
 } from "@react-three/drei";
-import { useControls, button, folder } from "leva";
+import { useControls, button, buttonGroup, folder } from "leva";
 import { easing } from "maath";
 
 import FaceLandmarker, { FaceLandmarkerDefaults } from "./components/FaceLandmarker";
@@ -50,13 +50,22 @@ function Scene() {
 
   const gui = useControls({
     camera: { value: "user", options: ["user", "cc"] },
-    webcam: true,
-    webcamVideoTextureSrc: {
-      value: vids[0],
-      options: vids,
-      optional: true,
-      disabled: true,
-    },
+    webcam: folder({
+      autostart: true,
+      webcam: true,
+      webcamVideoTextureSrc: {
+        value: vids[0],
+        options: vids,
+        optional: true,
+        disabled: true,
+      },
+      video: buttonGroup({
+        opts: {
+          pause: () => faceControlsApiRef.current?.pause(),
+          play: () => faceControlsApiRef.current?.play(),
+        },
+      }),
+    }),
     smoothTime: { value: 0.45, min: 0.000001, max: 1 },
     offset: true,
     offsetScalar: { value: 60, min: 0, max: 500 },
@@ -111,6 +120,7 @@ function Scene() {
         <FaceControls
           camera={userCam}
           ref={faceControlsApiRef}
+          autostart={gui.autostart}
           makeDefault
           webcam={gui.webcam}
           webcamVideoTextureSrc={gui.webcamVideoTextureSrc}

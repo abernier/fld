@@ -32,77 +32,6 @@ function localToLocal(objSrc: THREE.Object3D, v: THREE.Vector3, objDst: THREE.Ob
   return objDst.worldToLocal(v_world);
 }
 
-type WebcamProps = {
-  videoTextureSrc?: VideoTextureSrc;
-  autostart?: boolean;
-};
-
-const Webcam = ({ videoTextureSrc, autostart = true }: WebcamProps) => {
-  const [stream, setStream] = useState<MediaStream>();
-
-  const faceControls = useFaceControls();
-  useEffect(() => {
-    let strm: MediaStream;
-
-    if (!videoTextureSrc) {
-      navigator.mediaDevices
-        .getUserMedia({
-          audio: false,
-          video: { facingMode: "user" },
-        })
-        .then((s) => {
-          strm = s;
-          faceControls.dispatchEvent({ type: "stream", stream: strm });
-          setStream(strm);
-        })
-        .catch(console.error);
-    }
-
-    return () => {
-      console.log("stopping stream");
-      strm?.getTracks().forEach((track) => track.stop());
-    };
-  }, [faceControls, videoTextureSrc]);
-
-  return (
-    <Suspense fallback={null}>
-      <VideoTexture src={videoTextureSrc || stream!} />
-    </Suspense>
-  );
-};
-
-const useVideoFrame = (video: HTMLVideoElement, f: (...args: any) => any) => {
-  // https://web.dev/requestvideoframecallback-rvfc/
-  // https://www.remotion.dev/docs/video-manipulation
-  useEffect(() => {
-    if (!video || !video.requestVideoFrameCallback) return;
-    let handle: number;
-    function callback(...args: any) {
-      f(...args);
-      handle = video.requestVideoFrameCallback(callback);
-    }
-    video.requestVideoFrameCallback(callback);
-
-    return () => video.cancelVideoFrameCallback(handle);
-  }, [video, f]);
-};
-
-const VideoTexture = ({ src }: { src: VideoTextureSrc }) => {
-  const texture = useVideoTexture(src);
-  const video = texture.source.data;
-
-  const faceControls = useFaceControls();
-  const onVideoFrame = useCallback(
-    (time: number) => {
-      faceControls.dispatchEvent({ type: "videoFrame", texture, time });
-    },
-    [texture, faceControls]
-  );
-  useVideoFrame(video, onVideoFrame);
-
-  return <></>;
-};
-
 //
 //
 //
@@ -147,6 +76,7 @@ type FaceControlsApi = THREE.EventDispatcher & {
   computeTarget: () => THREE.Object3D;
   update: (delta: number, target?: THREE.Object3D) => void;
   facemeshApiRef: RefObject<FacemeshApi>;
+  webcamApiRef: RefObject<WebcamApi>;
 };
 
 const FaceControlsContext = createContext({} as FaceControlsApi);
@@ -178,6 +108,8 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
     const set = useThree((state) => state.set);
     const get = useThree((state) => state.get);
     const explCamera = camera || defaultCamera;
+
+    const webcamApiRef = useRef<WebcamApi>(null);
 
     const facemeshApiRef = useRef<FacemeshApi>(null);
 
@@ -299,6 +231,10 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
           computeTarget,
           update,
           facemeshApiRef,
+          webcamApiRef,
+          // shorthands
+          play: () => webcamApiRef.current?.videoTextureApiRef.current?.texture.source.data.play(),
+          pause: () => webcamApiRef.current?.videoTextureApiRef.current?.texture.source.data.pause(),
         }),
       [detect, computeTarget, update]
     );
@@ -335,7 +271,7 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
     const faceBlendshapes = faces?.faceBlendshapes?.[0];
     return (
       <FaceControlsContext.Provider value={api}>
-        {webcam && <Webcam autostart={autostart} videoTextureSrc={webcamVideoTextureSrc} />}
+        {webcam && <Webcam ref={webcamApiRef} autostart={autostart} videoTextureSrc={webcamVideoTextureSrc} />}
 
         <Facemesh
           ref={facemeshApiRef}
@@ -360,3 +296,106 @@ export const FaceControls = forwardRef<FaceControlsApi, FaceControlsProps>(
 );
 
 export const useFaceControls = () => useContext(FaceControlsContext);
+
+//
+// Webcam
+//
+
+type WebcamApi = {
+  videoTextureApiRef: RefObject<VideoTextureApi>;
+};
+
+type WebcamProps = {
+  videoTextureSrc?: VideoTextureSrc;
+  autostart?: boolean;
+};
+
+const Webcam = forwardRef<WebcamApi, WebcamProps>(({ videoTextureSrc, autostart = true }, fref) => {
+  const [stream, setStream] = useState<MediaStream>();
+
+  const videoTextureApiRef = useRef<VideoTextureApi>(null);
+
+  const faceControls = useFaceControls();
+  useEffect(() => {
+    let strm: MediaStream;
+
+    if (!videoTextureSrc) {
+      navigator.mediaDevices
+        .getUserMedia({
+          audio: false,
+          video: { facingMode: "user" },
+        })
+        .then((s) => {
+          strm = s;
+          faceControls.dispatchEvent({ type: "stream", stream: strm });
+          setStream(strm);
+        })
+        .catch(console.error);
+    }
+
+    return () => strm?.getTracks().forEach((track) => track.stop());
+  }, [faceControls, videoTextureSrc]);
+
+  // ref-api
+  const api = useMemo<WebcamApi>(
+    () => ({
+      videoTextureApiRef,
+    }),
+    []
+  );
+  useImperativeHandle(fref, () => api, [api]);
+
+  return (
+    <Suspense fallback={null}>
+      <VideoTexture ref={videoTextureApiRef} src={videoTextureSrc || stream!} start={autostart} />
+    </Suspense>
+  );
+});
+
+//
+// VideoTexture
+//
+
+type VideoTextureApi = { texture: THREE.VideoTexture };
+type VideoTextureProps = { src: VideoTextureSrc; start: boolean };
+
+const VideoTexture = forwardRef<VideoTextureApi, VideoTextureProps>(({ src, start }, fref) => {
+  const texture = useVideoTexture(src, { start });
+  const video = texture.source.data;
+
+  const faceControls = useFaceControls();
+  const onVideoFrame = useCallback(
+    (time: number) => {
+      faceControls.dispatchEvent({ type: "videoFrame", texture, time });
+    },
+    [texture, faceControls]
+  );
+  useVideoFrame(video, onVideoFrame);
+
+  // ref-api
+  const api = useMemo<VideoTextureApi>(
+    () => ({
+      texture,
+    }),
+    [texture]
+  );
+  useImperativeHandle(fref, () => api, [api]);
+
+  return <></>;
+});
+
+const useVideoFrame = (video: HTMLVideoElement, f: (...args: any) => any) => {
+  // https://web.dev/requestvideoframecallback-rvfc/
+  // https://www.remotion.dev/docs/video-manipulation
+  useEffect(() => {
+    if (!video || !video.requestVideoFrameCallback) return;
+    let handle: number;
+    function callback(...args: any) {
+      f(...args);
+      handle = video.requestVideoFrameCallback(callback);
+    }
+    video.requestVideoFrameCallback(callback);
+
+    return () => video.cancelVideoFrameCallback(handle);
+  }, [video, f]);
+};
