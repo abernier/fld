@@ -1,12 +1,12 @@
 {
-  "image": "mcr.microsoft.com/vscode/devcontainers/javascript-node:16",
+  "image": "mcr.microsoft.com/vscode/devcontainers/javascript-node:18",
   "waitFor": "onCreateCommand",
-  "updateContentCommand": "npm ci",
+  "updateContentCommand": "yarn install",
   "postCreateCommand": "",
-  "postAttachCommand": "npm run dev -- --port 5173",
+  "postAttachCommand": "yarn dev",
   "customizations": {
     "codespaces": {
-      "openFiles": ["src/App.tsx"]
+      "openFiles": ["src/App.jsx"]
     }
   },
   "portsAttributes": {
