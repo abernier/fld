@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   Grid,
@@ -18,7 +18,7 @@ import {
 import { useControls, button, buttonGroup, folder } from "leva";
 import { easing } from "maath";
 
-import FaceLandmarker, { FaceLandmarkerDefaults } from "./components/FaceLandmarker";
+import { FaceLandmarker, FaceLandmarkerDefaults } from "./components/FaceLandmarker";
 import { FaceControls } from "./components/FaceControls";
 
 import { Laptop } from "./Laptop";
@@ -32,12 +32,12 @@ export default function App() {
 
   return (
     <>
-      <FaceLandmarker basePath={visionBasePath} options={faceLandmarkerOptions}>
-        <Canvas shadows camera={{ position: [-0.6, 0.1, 0.6], near: 0.01 }}>
+      <Canvas shadows camera={{ position: [-0.6, 0.1, 0.6], near: 0.01 }}>
+        <FaceLandmarker basePath={visionBasePath} options={faceLandmarkerOptions}>
           <Scene />
-        </Canvas>
-        <Stats />
-      </FaceLandmarker>
+        </FaceLandmarker>
+      </Canvas>
+      <Stats />
     </>
   );
 }
