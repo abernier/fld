@@ -17,9 +17,10 @@ import {
 import { useFrame, useThree } from "@react-three/fiber";
 import { FaceLandmarkerResult } from "@mediapipe/tasks-vision";
 import { easing } from "maath";
-import { clear, suspend } from "suspend-react";
+import { suspend, clear } from "suspend-react";
 
 import { useVideoTexture } from "@react-three/drei";
+// import { useVideoTexture } from './useVideoTexture'
 import { Facemesh, FacemeshApi, FacemeshProps } from "./Facemesh";
 import { useFaceLandmarker } from "./FaceLandmarker";
 
@@ -50,7 +51,7 @@ export type FaceControlsProps = {
   webcamVideoTextureSrc?: VideoTextureSrc;
   /** Disable the rAF camera position/rotation update, default: false */
   manualUpdate?: boolean;
-  /** Disable the rVF face-detection, default: false */
+  /** Disable the rVFC face-detection, default: false */
   manualDetect?: boolean;
   /** Callback function to call on "videoFrame" event, default: undefined */
   onVideoFrame?: (e: THREE.Event) => void;
@@ -363,9 +364,9 @@ const Webcam = forwardRef<WebcamApi, WebcamProps>(({ videoTextureSrc, autostart 
   useImperativeHandle(fref, () => api, [api]);
 
   return (
-    // <Suspense fallback={null}>
-    <VideoTexture ref={videoTextureApiRef} src={videoTextureSrc || stream!} start={autostart} />
-    // </Suspense>
+    <Suspense fallback={null}>
+      <VideoTexture ref={videoTextureApiRef} src={videoTextureSrc || stream!} start={autostart} />
+    </Suspense>
   );
 });
 

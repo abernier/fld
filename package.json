@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.0",
+    "@pmndrs/assets": "^1.0.6",
     "@react-three/drei": "^9.66.4",
     "@react-three/fiber": "^8.12.1",
     "leva": "^0.9.34",

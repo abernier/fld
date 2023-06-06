@@ -2,8 +2,9 @@
 import * as React from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
+
+// import { Line } from './Line'
 import { Line } from "@react-three/drei";
-import { DEG2RAD } from "three/src/math/MathUtils";
 
 export type MediaPipeFaceMesh = typeof FacemeshDatas.SAMPLE_FACE;
 
@@ -415,8 +416,8 @@ export const FacemeshEye = React.forwardRef<FacemeshEyeApi, FacemeshEyeProps>(({
         const lookUp = faceBlendshapes.categories[blendshapes[2]].score;
         const lookDown = faceBlendshapes.categories[blendshapes[3]].score;
 
-        const hfov = FacemeshEyeDefaults.fov.horizontal * DEG2RAD;
-        const vfov = FacemeshEyeDefaults.fov.vertical * DEG2RAD;
+        const hfov = FacemeshEyeDefaults.fov.horizontal * THREE.MathUtils.DEG2RAD;
+        const vfov = FacemeshEyeDefaults.fov.vertical * THREE.MathUtils.DEG2RAD;
         const rx = hfov * 0.5 * (lookDown - lookUp);
         const ry = vfov * 0.5 * (lookIn - lookOut) * (side === "left" ? 1 : -1);
         rotation.set(rx, ry, 0);

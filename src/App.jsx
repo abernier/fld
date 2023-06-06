@@ -23,6 +23,8 @@ import { FaceControls } from "./components/FaceControls";
 
 import { Laptop } from "./Laptop";
 
+const city = import("@pmndrs/assets/hdri/city.exr");
+
 export default function App() {
   const visionBasePath = new URL("/tasks-vision-wasm", import.meta.url).toString() // prettier-ignore
   const modelAssetPath = new URL("/face_landmarker.task", import.meta.url).toString() // prettier-ignore
@@ -162,7 +164,7 @@ function Scene() {
 
       <CameraControls />
 
-      <Environment preset="city" />
+      <Environment files={city} />
     </>
   );
 }
